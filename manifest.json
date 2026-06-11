@@ -2,7 +2,7 @@
   "name": "DayFlow — Night Shift Tracker",
   "short_name": "DayFlow",
   "description": "Your daily hourly tracker and habit planner",
-  "start_url": "./daily-tracker-ios.html",
+"start_url": "./index.html"
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",
