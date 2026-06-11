@@ -2,11 +2,14 @@
   "name": "DayFlow — Night Shift Tracker",
   "short_name": "DayFlow",
   "description": "Your daily hourly tracker and habit planner",
-"start_url": "./index.html"
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
+  "scope": "./",
+  "lang": "en",
+  "categories": ["productivity", "lifestyle"],
   "icons": [
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%23000'/><circle cx='96' cy='96' r='40' fill='%230A84FF'/><circle cx='96' cy='96' r='24' fill='%23000'/><circle cx='96' cy='96' r='10' fill='%230A84FF'/></svg>",
@@ -21,6 +24,5 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["productivity", "lifestyle"],
-  "lang": "en"
+  "prefer_related_applications": false
 }
