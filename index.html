@@ -860,6 +860,178 @@
     .btn-row { flex-direction: column; }
     .btn { width: 100%; text-align: center; }
   }
+
+  /* ── CALENDAR ── */
+  #calendarCard { grid-column: 1 / -1; }
+
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-nav-btn {
+    background: var(--glass);
+    border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 16px;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cal-nav-btn:hover { background: rgba(128,128,128,0.15); color: var(--text); }
+  .cal-nav-btn:active { transform: scale(0.92); }
+  .cal-month-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .cal-weekdays span {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 4px 0;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .cal-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease;
+    border: 0.5px solid transparent;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cal-cell:hover:not(.cal-empty) { background: var(--glass); border-color: var(--glass-border); color: var(--text); }
+  .cal-cell.cal-empty { cursor: default; }
+  .cal-cell.cal-today {
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(10,132,255,0.4);
+  }
+  .cal-cell.cal-today:hover { background: var(--blue); }
+  .cal-cell.cal-selected:not(.cal-today) {
+    background: rgba(10,132,255,0.15);
+    border-color: rgba(10,132,255,0.35);
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .cal-cell.cal-has-data::after {
+    content: '';
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--green);
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .cal-cell.cal-today.cal-has-data::after { background: rgba(255,255,255,0.7); }
+
+  /* Log viewer panel */
+  .cal-log-panel {
+    margin-top: 14px;
+    border-top: 0.5px solid var(--border);
+    padding-top: 14px;
+    display: none;
+  }
+  .cal-log-panel.visible { display: block; }
+  .cal-log-date {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 10px;
+  }
+  .cal-log-section {
+    margin-bottom: 12px;
+  }
+  .cal-log-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+  }
+  .cal-log-hours {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .cal-log-hour-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: var(--radius-xs);
+    background: var(--glass);
+    font-size: 12px;
+  }
+  .cal-log-hour-row.done-row { border-left: 2px solid var(--green); }
+  .cal-log-hour-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    min-width: 48px;
+    font-variant-numeric: tabular-nums;
+  }
+  .cal-log-hour-text { color: var(--text-secondary); flex: 1; line-height: 1.4; }
+  .cal-log-reflection {
+    background: var(--glass);
+    border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-style: italic;
+  }
+  .cal-log-empty {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    text-align: center;
+    padding: 20px 0;
+  }
+  .cal-log-stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .cal-log-stat-chip {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 0.5px solid transparent;
+  }
 </style>
 </head>
 <body>
@@ -878,6 +1050,35 @@
 </header>
 
 <div class="container">
+
+  <!-- CALENDAR / PAST NOTES -->
+  <div class="card" id="calendarCard">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">📅</span>Calendar — Past Notes</div>
+    </div>
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="calPrev" onclick="calNav(-1)">‹</button>
+      <div class="cal-month-label" id="calMonthLabel"></div>
+      <button class="cal-nav-btn" id="calNext" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span>
+      <span>Thu</span><span>Fri</span><span>Sat</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-log-panel" id="calLogPanel">
+      <div class="cal-log-date" id="calLogDate"></div>
+      <div class="cal-log-stats" id="calLogStats"></div>
+      <div class="cal-log-section" id="calLogHoursSection">
+        <div class="cal-log-section-title">📋 Hour Log</div>
+        <div class="cal-log-hours" id="calLogHours"></div>
+      </div>
+      <div class="cal-log-section" id="calLogReflectionSection">
+        <div class="cal-log-section-title">✍️ Reflection</div>
+        <div class="cal-log-reflection" id="calLogReflection"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- LIVE SUMMARY -->
   <div class="card" id="summaryCard">
@@ -1619,8 +1820,146 @@ function initTheme() {
   });
 }
 
+// ── CALENDAR ──
+let calYear, calMonth, calSelectedKey = null;
+
+function calStorageKey(y, m, d) {
+  return STORAGE_KEY + y + '-' + (m+1) + '-' + d;
+}
+
+function dayHasData(y, m, d) {
+  const raw = localStorage.getItem(calStorageKey(y, m, d));
+  if (!raw) return false;
+  const data = JSON.parse(raw);
+  return HOUR_SLOTS.some(h => {
+    const e = data['h' + h];
+    return e && (e.done || (e.text && e.text.trim().length > 0));
+  });
+}
+
+function renderCalendar() {
+  const today = new Date();
+  if (calYear === undefined) { calYear = today.getFullYear(); calMonth = today.getMonth(); }
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMonthLabel').textContent = monthNames[calMonth] + ' ' + calYear;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+  const todayStr = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-cell cal-empty';
+    grid.appendChild(empty);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    cell.textContent = d;
+
+    const cellKey = calYear + '-' + (calMonth+1) + '-' + d;
+    if (cellKey === todayStr) cell.classList.add('cal-today');
+    if (cellKey === calSelectedKey) cell.classList.add('cal-selected');
+    if (dayHasData(calYear, calMonth, d)) cell.classList.add('cal-has-data');
+
+    cell.addEventListener('click', () => showCalLog(calYear, calMonth, d, cellKey));
+    grid.appendChild(cell);
+  }
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function showCalLog(y, m, d, key) {
+  calSelectedKey = key;
+  renderCalendar();
+
+  const panel = document.getElementById('calLogPanel');
+  panel.classList.add('visible');
+
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dow = new Date(y, m, d).getDay();
+  document.getElementById('calLogDate').textContent = dayNames[dow] + ', ' + monthNames[m] + ' ' + d + ', ' + y;
+
+  const raw = localStorage.getItem(calStorageKey(y, m, d));
+  const data = raw ? JSON.parse(raw) : {};
+
+  // Stats chips
+  const statsEl = document.getElementById('calLogStats');
+  let productive = 0, total = 0;
+  HOUR_SLOTS.forEach(h => {
+    const e = data['h' + h];
+    if (e && e.text && e.text.trim().length > 0) { total++; if (e.done) productive++; }
+  });
+  if (total > 0) {
+    const pct = Math.round((productive / total) * 100);
+    statsEl.innerHTML =
+      '<span class="cal-log-stat-chip badge-green">✅ ' + productive + ' productive</span>' +
+      '<span class="cal-log-stat-chip badge-blue">📝 ' + total + ' logged</span>' +
+      '<span class="cal-log-stat-chip badge-orange">⚡ ' + pct + '% score</span>';
+  } else {
+    statsEl.innerHTML = '';
+  }
+
+  // Hour rows
+  const hoursEl = document.getElementById('calLogHours');
+  const hoursSec = document.getElementById('calLogHoursSection');
+  const entries = HOUR_SLOTS.map(h => ({ h, ...(data['h' + h] || {}) })).filter(e => e.text && e.text.trim().length > 0);
+  if (entries.length === 0) {
+    hoursSec.style.display = 'none';
+  } else {
+    hoursSec.style.display = '';
+    hoursEl.innerHTML = entries.map(e => {
+      let label;
+      if (e.h === 0) label = '12 AM';
+      else if (e.h < 12) label = e.h + ' AM';
+      else if (e.h === 12) label = '12 PM';
+      else label = (e.h - 12) + ' PM';
+      return '<div class="cal-log-hour-row' + (e.done ? ' done-row' : '') + '">' +
+        '<span class="cal-log-hour-label">' + label + '</span>' +
+        '<span class="cal-log-hour-text">' + (e.done ? '✅ ' : '') + e.text + '</span></div>';
+    }).join('');
+  }
+
+  // Reflection
+  const refSec = document.getElementById('calLogReflectionSection');
+  const refEl = document.getElementById('calLogReflection');
+  const reflection = data.reflection;
+  if (reflection && reflection.trim().length > 0) {
+    refSec.style.display = '';
+    refEl.textContent = reflection;
+  } else {
+    refSec.style.display = 'none';
+  }
+
+  if (entries.length === 0 && (!reflection || reflection.trim().length === 0)) {
+    hoursEl.innerHTML = '';
+    hoursSec.style.display = '';
+    hoursEl.innerHTML = '<div class="cal-log-empty">No entries logged for this day.</div>';
+  }
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function initCalendar() {
+  const today = new Date();
+  calYear = today.getFullYear();
+  calMonth = today.getMonth();
+  renderCalendar();
+}
+
 function init() {
   initTheme();
+  initCalendar();
   setHeaderDate();
   buildGrid();
   loadPriorities();
