@@ -1453,6 +1453,138 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ══════════════════════════════════════════════
+// LOCK SCREEN
+// ══════════════════════════════════════════════
+const LOCK_KEY = 'dayflow_lock_hash';
+const LOCK_SALT = 'dayflow_2025_salt';
+
+// Simple hash: not cryptographic but enough for local privacy
+async function lockHash(password) {
+  const data = LOCK_SALT + password;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function lockIsSet() {
+  return !!localStorage.getItem(LOCK_KEY);
+}
+
+function lockToggleEye(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const isPassword = inp.type === 'password';
+  inp.type = isPassword ? 'text' : 'password';
+  btn.textContent = isPassword ? '🙈' : '👁️';
+}
+
+function lockGetStrength(pw) {
+  if (pw.length < 4) return { level: 0, label: '' };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { level: 1, label: 'Weak' };
+  if (score <= 2) return { level: 2, label: 'Medium' };
+  return { level: 3, label: 'Strong' };
+}
+
+function lockUpdateStrength() {
+  const pw = document.getElementById('lockInput').value;
+  const { level, label } = lockGetStrength(pw);
+  const bars = [document.getElementById('lsb1'), document.getElementById('lsb2'), document.getElementById('lsb3')];
+  const cls = level === 1 ? 'weak' : level === 2 ? 'medium' : 'strong';
+  bars.forEach((b, i) => {
+    b.className = 'lock-strength-bar' + (i < level ? ' ' + cls : '');
+  });
+  document.getElementById('lockStrengthLabel').textContent = label;
+  document.getElementById('lockStrengthLabel').style.color =
+    level === 1 ? 'var(--red)' : level === 2 ? 'var(--orange)' : 'var(--green)';
+}
+
+function lockShowError(msg) {
+  const el = document.getElementById('lockError');
+  el.textContent = msg;
+  document.getElementById('lockInput').classList.add('error');
+  setTimeout(() => {
+    document.getElementById('lockInput').classList.remove('error');
+    const conf = document.getElementById('lockConfirmInput');
+    if (conf) conf.classList.remove('error');
+  }, 600);
+}
+
+function lockClearError() {
+  document.getElementById('lockError').textContent = '';
+}
+
+async function lockAction() {
+  const pw = document.getElementById('lockInput').value.trim();
+  if (!pw) { lockShowError('Please enter a password.'); return; }
+
+  if (!lockIsSet()) {
+    // SETUP MODE
+    const conf = document.getElementById('lockConfirmInput').value.trim();
+    if (!conf) { lockShowError('Please confirm your password.'); return; }
+    if (pw !== conf) { lockShowError('Passwords do not match.'); return; }
+    const { level } = lockGetStrength(pw);
+    if (level < 1 || pw.length < 4) { lockShowError('Password must be at least 4 characters.'); return; }
+    const hash = await lockHash(pw);
+    localStorage.setItem(LOCK_KEY, hash);
+    lockUnlock();
+    showToast('🔒 Password set! Keep it safe.');
+  } else {
+    // UNLOCK MODE
+    const hash = await lockHash(pw);
+    const stored = localStorage.getItem(LOCK_KEY);
+    if (hash === stored) {
+      lockUnlock();
+    } else {
+      lockShowError('Wrong password. Try again.');
+      document.getElementById('lockInput').value = '';
+      document.getElementById('lockInput').focus();
+    }
+  }
+}
+
+function lockUnlock() {
+  const screen = document.getElementById('lockScreen');
+  screen.style.animation = 'fadeOut 0.25s ease forwards';
+  setTimeout(() => screen.classList.add('hidden'), 250);
+}
+
+function lockInit() {
+  const screen = document.getElementById('lockScreen');
+  const inp = document.getElementById('lockInput');
+
+  if (!lockIsSet()) {
+    // First time setup
+    document.getElementById('lockTitle').textContent = 'Set a Password';
+    document.getElementById('lockSub').textContent = 'Protect your DayFlow data with a password.';
+    document.getElementById('lockActionBtn').textContent = 'Set Password';
+    document.getElementById('lockConfirmWrap').style.display = 'block';
+    document.getElementById('lockStrength').style.display = 'flex';
+    document.getElementById('lockStrengthLabel').style.display = 'block';
+    document.getElementById('lockHint').textContent = 'Use letters, numbers, or symbols. You can change this in Settings.';
+    inp.placeholder = 'Create a password';
+    inp.autocomplete = 'new-password';
+    inp.addEventListener('input', lockUpdateStrength);
+    inp.addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') { document.getElementById('lockConfirmInput').focus(); } });
+    document.getElementById('lockConfirmInput').addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') lockAction(); });
+  } else {
+    // Unlock screen
+    document.getElementById('lockTitle').textContent = 'DayFlow';
+    document.getElementById('lockSub').textContent = 'Enter your password to continue';
+    document.getElementById('lockActionBtn').textContent = 'Unlock';
+    inp.focus();
+    inp.addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') lockAction(); });
+  }
+}
+
+// Add fadeOut keyframe dynamically
+const lockStyle = document.createElement('style');
+lockStyle.textContent = '@keyframes fadeOut { from { opacity:1; } to { opacity:0; } }';
+document.head.appendChild(lockStyle);
+
 const HOUR_SLOTS = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
 const HOURS = HOUR_SLOTS.map(h => {
   let label;
@@ -2387,137 +2519,7 @@ function init() {
 }
 init();
 
-// ══════════════════════════════════════════════
-// LOCK SCREEN
-// ══════════════════════════════════════════════
-const LOCK_KEY = 'dayflow_lock_hash';
-const LOCK_SALT = 'dayflow_2025_salt';
 
-// Simple hash: not cryptographic but enough for local privacy
-async function lockHash(password) {
-  const data = LOCK_SALT + password;
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
-function lockIsSet() {
-  return !!localStorage.getItem(LOCK_KEY);
-}
-
-function lockToggleEye(inputId, btn) {
-  const inp = document.getElementById(inputId);
-  const isPassword = inp.type === 'password';
-  inp.type = isPassword ? 'text' : 'password';
-  btn.textContent = isPassword ? '🙈' : '👁️';
-}
-
-function lockGetStrength(pw) {
-  if (pw.length < 4) return { level: 0, label: '' };
-  let score = 0;
-  if (pw.length >= 8) score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/[0-9]/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  if (score <= 1) return { level: 1, label: 'Weak' };
-  if (score <= 2) return { level: 2, label: 'Medium' };
-  return { level: 3, label: 'Strong' };
-}
-
-function lockUpdateStrength() {
-  const pw = document.getElementById('lockInput').value;
-  const { level, label } = lockGetStrength(pw);
-  const bars = [document.getElementById('lsb1'), document.getElementById('lsb2'), document.getElementById('lsb3')];
-  const cls = level === 1 ? 'weak' : level === 2 ? 'medium' : 'strong';
-  bars.forEach((b, i) => {
-    b.className = 'lock-strength-bar' + (i < level ? ' ' + cls : '');
-  });
-  document.getElementById('lockStrengthLabel').textContent = label;
-  document.getElementById('lockStrengthLabel').style.color =
-    level === 1 ? 'var(--red)' : level === 2 ? 'var(--orange)' : 'var(--green)';
-}
-
-function lockShowError(msg) {
-  const el = document.getElementById('lockError');
-  el.textContent = msg;
-  document.getElementById('lockInput').classList.add('error');
-  setTimeout(() => {
-    document.getElementById('lockInput').classList.remove('error');
-    const conf = document.getElementById('lockConfirmInput');
-    if (conf) conf.classList.remove('error');
-  }, 600);
-}
-
-function lockClearError() {
-  document.getElementById('lockError').textContent = '';
-}
-
-async function lockAction() {
-  const pw = document.getElementById('lockInput').value.trim();
-  if (!pw) { lockShowError('Please enter a password.'); return; }
-
-  if (!lockIsSet()) {
-    // SETUP MODE
-    const conf = document.getElementById('lockConfirmInput').value.trim();
-    if (!conf) { lockShowError('Please confirm your password.'); return; }
-    if (pw !== conf) { lockShowError('Passwords do not match.'); return; }
-    const { level } = lockGetStrength(pw);
-    if (level < 1 || pw.length < 4) { lockShowError('Password must be at least 4 characters.'); return; }
-    const hash = await lockHash(pw);
-    localStorage.setItem(LOCK_KEY, hash);
-    lockUnlock();
-    showToast('🔒 Password set! Keep it safe.');
-  } else {
-    // UNLOCK MODE
-    const hash = await lockHash(pw);
-    const stored = localStorage.getItem(LOCK_KEY);
-    if (hash === stored) {
-      lockUnlock();
-    } else {
-      lockShowError('Wrong password. Try again.');
-      document.getElementById('lockInput').value = '';
-      document.getElementById('lockInput').focus();
-    }
-  }
-}
-
-function lockUnlock() {
-  const screen = document.getElementById('lockScreen');
-  screen.style.animation = 'fadeOut 0.25s ease forwards';
-  setTimeout(() => screen.classList.add('hidden'), 250);
-}
-
-function lockInit() {
-  const screen = document.getElementById('lockScreen');
-  const inp = document.getElementById('lockInput');
-
-  if (!lockIsSet()) {
-    // First time setup
-    document.getElementById('lockTitle').textContent = 'Set a Password';
-    document.getElementById('lockSub').textContent = 'Protect your DayFlow data with a password.';
-    document.getElementById('lockActionBtn').textContent = 'Set Password';
-    document.getElementById('lockConfirmWrap').style.display = 'block';
-    document.getElementById('lockStrength').style.display = 'flex';
-    document.getElementById('lockStrengthLabel').style.display = 'block';
-    document.getElementById('lockHint').textContent = 'Use letters, numbers, or symbols. You can change this in Settings.';
-    inp.placeholder = 'Create a password';
-    inp.autocomplete = 'new-password';
-    inp.addEventListener('input', lockUpdateStrength);
-    inp.addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') { document.getElementById('lockConfirmInput').focus(); } });
-    document.getElementById('lockConfirmInput').addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') lockAction(); });
-  } else {
-    // Unlock screen
-    document.getElementById('lockTitle').textContent = 'DayFlow';
-    document.getElementById('lockSub').textContent = 'Enter your password to continue';
-    document.getElementById('lockActionBtn').textContent = 'Unlock';
-    inp.focus();
-    inp.addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') lockAction(); });
-  }
-}
-
-// Add fadeOut keyframe dynamically
-const lockStyle = document.createElement('style');
-lockStyle.textContent = '@keyframes fadeOut { from { opacity:1; } to { opacity:0; } }';
-document.head.appendChild(lockStyle);
 
 </script>
 </body>
