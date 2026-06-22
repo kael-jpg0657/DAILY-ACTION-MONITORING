@@ -2,14 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DayFlow">
-<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DayFlow — Night Shift Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -406,6 +399,38 @@
   }
   .priority-input::placeholder { color: var(--text-tertiary); }
   .priority-input.done { text-decoration: line-through; color: var(--text-tertiary); }
+
+  .add-priority-btn {
+    background: rgba(10,132,255,0.12);
+    border: 0.5px solid rgba(10,132,255,0.3);
+    color: var(--blue);
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s cubic-bezier(0.34,1.4,0.64,1);
+    flex-shrink: 0;
+  }
+  .add-priority-btn:hover {
+    background: rgba(10,132,255,0.22);
+    transform: scale(1.12);
+  }
+  .del-priority-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .priority-item:hover .del-priority-btn { opacity: 1; }
+  .del-priority-btn:hover { color: var(--red); }
 
   /* ── CHECKBOX (iOS style) ── */
   .cb-wrap { position: relative; flex-shrink: 0; }
@@ -835,6 +860,153 @@
     margin: 14px 0 8px;
   }
 
+  /* ── CALENDAR ── */
+  .cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-nav-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 0.5px solid var(--glass-border);
+    background: var(--glass); color: var(--text-secondary); font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .cal-nav-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+  .cal-nav-btn:active { transform: scale(0.92); }
+  .cal-month-label {
+    font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+  }
+  .cal-weekdays {
+    display: grid; grid-template-columns: repeat(7,1fr);
+    text-align: center; margin-bottom: 6px;
+  }
+  .cal-weekday {
+    font-size: 10px; font-weight: 600; color: var(--text-tertiary);
+    letter-spacing: 0.5px; text-transform: uppercase; padding: 4px 0;
+  }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7,1fr); gap: 3px;
+  }
+  .cal-day {
+    aspect-ratio: 1; border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; transition: all 0.15s;
+    font-size: 13px; font-weight: 500; color: var(--text-secondary);
+    border: 0.5px solid transparent;
+  }
+  .cal-day:hover { background: var(--glass); border-color: var(--glass-border); }
+  .cal-day.empty { cursor: default; pointer-events: none; }
+  .cal-day.today {
+    background: rgba(10,132,255,0.15); border-color: rgba(10,132,255,0.4);
+    color: var(--blue); font-weight: 700;
+  }
+  .cal-day.has-data::after {
+    content: ''; position: absolute; bottom: 3px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green);
+  }
+  .cal-day.has-data.score-low::after { background: var(--red); }
+  .cal-day.has-data.score-mid::after { background: var(--orange); }
+  .cal-day.has-data.score-high::after { background: var(--green); }
+  .cal-day.selected {
+    background: rgba(10,132,255,0.2); border-color: var(--blue); color: var(--blue);
+  }
+  .cal-day.future { opacity: 0.3; pointer-events: none; }
+
+  .cal-record {
+    margin-top: 14px; padding: 14px;
+    background: var(--glass); border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-lg); display: none;
+    animation: fadeUp 0.25s ease;
+  }
+  .cal-record.visible { display: block; }
+  .cal-record-date {
+    font-size: 12px; font-weight: 600; color: var(--text-tertiary);
+    letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .cal-record-stats {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 10px;
+  }
+  .cal-stat {
+    text-align: center; background: var(--surface2);
+    border-radius: var(--radius-md); padding: 10px 6px;
+  }
+  .cal-stat-val { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .cal-stat-label { font-size: 9px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.6px; text-transform: uppercase; margin-top: 3px; }
+  .cal-hours-preview {
+    display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px;
+  }
+  .cal-hour-chip {
+    font-size: 10px; font-weight: 500; padding: 2px 7px;
+    border-radius: 20px; border: 0.5px solid transparent;
+  }
+  .cal-hour-chip.done { background: rgba(48,209,88,0.12); color: var(--green); border-color: rgba(48,209,88,0.25); }
+  .cal-hour-chip.missed { background: rgba(255,69,58,0.08); color: var(--text-tertiary); border-color: rgba(255,69,58,0.15); }
+  .cal-reflection-preview {
+    font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+    border-left: 2px solid var(--blue); padding-left: 10px;
+    font-style: italic;
+  }
+  .cal-no-data {
+    text-align: center; font-size: 13px; color: var(--text-tertiary); padding: 10px 0;
+  }
+  body.light .cal-nav-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.10); }
+  body.light .cal-day.today { background: rgba(0,122,255,0.10); }
+  body.light .cal-day.selected { background: rgba(0,122,255,0.12); }
+  body.light .cal-stat { background: rgba(0,0,0,0.04); }
+
+  /* ── MAIN TABS ── */
+  .tab-nav {
+    position: sticky;
+    top: 53px;
+    z-index: 90;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+    padding: 0 16px;
+  }
+  body.light .tab-nav {
+    background: rgba(242,242,247,0.82);
+    border-bottom-color: rgba(0,0,0,0.10);
+  }
+  .tab-nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tab-nav-inner::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.18s ease;
+    letter-spacing: -0.1px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+  }
+  .tab-icon { font-size: 14px; }
+
+  .tab-panel { display: none !important; }
+  .tab-panel.active { display: grid !important; }
+
   /* ── RESPONSIVE ── */
   @media (min-width: 600px) and (max-width: 899px) {
     .container { max-width: 720px; padding: 18px 20px; }
@@ -860,178 +1032,6 @@
     .btn-row { flex-direction: column; }
     .btn { width: 100%; text-align: center; }
   }
-
-  /* ── CALENDAR ── */
-  #calendarCard { grid-column: 1 / -1; }
-
-  .cal-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .cal-nav-btn {
-    background: var(--glass);
-    border: 0.5px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    font-size: 16px;
-    width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .cal-nav-btn:hover { background: rgba(128,128,128,0.15); color: var(--text); }
-  .cal-nav-btn:active { transform: scale(0.92); }
-  .cal-month-label {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: -0.2px;
-  }
-  .cal-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    margin-bottom: 6px;
-  }
-  .cal-weekdays span {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-tertiary);
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    padding: 4px 0;
-  }
-  .cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
-  }
-  .cal-cell {
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    cursor: pointer;
-    position: relative;
-    transition: all 0.15s ease;
-    border: 0.5px solid transparent;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .cal-cell:hover:not(.cal-empty) { background: var(--glass); border-color: var(--glass-border); color: var(--text); }
-  .cal-cell.cal-empty { cursor: default; }
-  .cal-cell.cal-today {
-    background: var(--blue);
-    color: #fff;
-    font-weight: 700;
-    box-shadow: 0 2px 10px rgba(10,132,255,0.4);
-  }
-  .cal-cell.cal-today:hover { background: var(--blue); }
-  .cal-cell.cal-selected:not(.cal-today) {
-    background: rgba(10,132,255,0.15);
-    border-color: rgba(10,132,255,0.35);
-    color: var(--blue);
-    font-weight: 600;
-  }
-  .cal-cell.cal-has-data::after {
-    content: '';
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: var(--green);
-    position: absolute;
-    bottom: 3px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  .cal-cell.cal-today.cal-has-data::after { background: rgba(255,255,255,0.7); }
-
-  /* Log viewer panel */
-  .cal-log-panel {
-    margin-top: 14px;
-    border-top: 0.5px solid var(--border);
-    padding-top: 14px;
-    display: none;
-  }
-  .cal-log-panel.visible { display: block; }
-  .cal-log-date {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.7px;
-    margin-bottom: 10px;
-  }
-  .cal-log-section {
-    margin-bottom: 12px;
-  }
-  .cal-log-section-title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    color: var(--text-tertiary);
-    margin-bottom: 6px;
-  }
-  .cal-log-hours {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    max-height: 180px;
-    overflow-y: auto;
-  }
-  .cal-log-hour-row {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    padding: 5px 8px;
-    border-radius: var(--radius-xs);
-    background: var(--glass);
-    font-size: 12px;
-  }
-  .cal-log-hour-row.done-row { border-left: 2px solid var(--green); }
-  .cal-log-hour-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-tertiary);
-    min-width: 48px;
-    font-variant-numeric: tabular-nums;
-  }
-  .cal-log-hour-text { color: var(--text-secondary); flex: 1; line-height: 1.4; }
-  .cal-log-reflection {
-    background: var(--glass);
-    border: 0.5px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    padding: 10px 12px;
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    font-style: italic;
-  }
-  .cal-log-empty {
-    font-size: 13px;
-    color: var(--text-tertiary);
-    text-align: center;
-    padding: 20px 0;
-  }
-  .cal-log-stats {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-  }
-  .cal-log-stat-chip {
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    border: 0.5px solid transparent;
-  }
 </style>
 </head>
 <body>
@@ -1049,39 +1049,38 @@
   </div>
 </header>
 
-<div class="container">
-
-  <!-- CALENDAR / PAST NOTES -->
-  <div class="card" id="calendarCard">
-    <div class="card-header">
-      <div class="card-title"><span class="card-title-icon">📅</span>Calendar — Past Notes</div>
-    </div>
-    <div class="cal-nav">
-      <button class="cal-nav-btn" id="calPrev" onclick="calNav(-1)">‹</button>
-      <div class="cal-month-label" id="calMonthLabel"></div>
-      <button class="cal-nav-btn" id="calNext" onclick="calNav(1)">›</button>
-    </div>
-    <div class="cal-weekdays">
-      <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span>
-      <span>Thu</span><span>Fri</span><span>Sat</span>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-log-panel" id="calLogPanel">
-      <div class="cal-log-date" id="calLogDate"></div>
-      <div class="cal-log-stats" id="calLogStats"></div>
-      <div class="cal-log-section" id="calLogHoursSection">
-        <div class="cal-log-section-title">📋 Hour Log</div>
-        <div class="cal-log-hours" id="calLogHours"></div>
-      </div>
-      <div class="cal-log-section" id="calLogReflectionSection">
-        <div class="cal-log-section-title">✍️ Reflection</div>
-        <div class="cal-log-reflection" id="calLogReflection"></div>
-      </div>
-    </div>
+<!-- TAB NAVIGATION -->
+<nav class="tab-nav">
+  <div class="tab-nav-inner">
+    <button class="tab-btn active" onclick="switchTab('today')" id="tab-today">
+      <span class="tab-icon">📊</span> Today
+    </button>
+    <button class="tab-btn" onclick="switchTab('tracker')" id="tab-tracker">
+      <span class="tab-icon">🕐</span> Hour Tracker
+    </button>
+    <button class="tab-btn" onclick="switchTab('goals')" id="tab-goals">
+      <span class="tab-icon">🎯</span> Priorities &amp; Goals
+    </button>
+    <button class="tab-btn" onclick="switchTab('insights')" id="tab-insights">
+      <span class="tab-icon">🧠</span> Insights
+    </button>
+    <button class="tab-btn" onclick="switchTab('reflect')" id="tab-reflect">
+      <span class="tab-icon">✍️</span> Reflection
+    </button>
+    <button class="tab-btn" onclick="switchTab('history')" id="tab-history">
+      <span class="tab-icon">📅</span> History
+    </button>
+    <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">
+      <span class="tab-icon">⚙️</span> Settings
+    </button>
   </div>
+</nav>
+
+<!-- ── TAB: TODAY ── -->
+<div class="container tab-panel active" id="panel-today">
 
   <!-- LIVE SUMMARY -->
-  <div class="card" id="summaryCard">
+  <div class="card" id="summaryCard" style="grid-column:1/-1">
     <div class="card-header">
       <div class="card-title"><span class="card-title-icon">📊</span>Live Summary</div>
     </div>
@@ -1110,7 +1109,7 @@
   </div>
 
   <!-- PROGRESS -->
-  <div class="card" id="progressCard">
+  <div class="card" id="progressCard" style="grid-column:1/-1">
     <div class="card-header">
       <div class="card-title"><span class="card-title-icon">📈</span>Progress</div>
     </div>
@@ -1128,60 +1127,46 @@
     <div class="heatmap-row" id="heatmap"></div>
   </div>
 
+  <!-- ACTIONS -->
+  <div class="card" id="actionsCard" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">⚙️</span>Actions</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generateFeedback()">🔄 Refresh Analysis</button>
+      <button class="btn btn-ghost" onclick="exportSummary()">📋 Copy Summary</button>
+      <button class="btn btn-danger" onclick="resetDay()">🗑 Reset Day</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── TAB: HOUR TRACKER ── -->
+<div class="container tab-panel" id="panel-tracker">
+  <div class="card" id="hourCard" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">🕛</span>Full Day Tracker (12AM – 11PM)</div>
+    </div>
+    <div id="hourGrid"></div>
+  </div>
+</div>
+
+<!-- ── TAB: PRIORITIES & GOALS ── -->
+<div class="container tab-panel" id="panel-goals">
+
   <!-- TOP PRIORITIES -->
   <div class="card" id="priorityCard">
     <div class="card-header">
       <div class="card-title"><span class="card-title-icon">🎯</span>Top Priorities</div>
+      <button class="add-priority-btn" onclick="addPriority()" title="Add priority">＋</button>
     </div>
-    <div id="prioritiesContainer">
-      <div class="priority-item">
-        <span class="priority-num">01</span>
-        <div class="cb-wrap"><input type="checkbox" id="p0" onchange="onPriorityChange()"><label class="cb-custom" for="p0"><span class="checkmark">✓</span></label></div>
-        <input class="priority-input" id="pt0" placeholder="Your #1 priority today…" oninput="savePriority(0)">
-      </div>
-      <div class="priority-item">
-        <span class="priority-num">02</span>
-        <div class="cb-wrap"><input type="checkbox" id="p1" onchange="onPriorityChange()"><label class="cb-custom" for="p1"><span class="checkmark">✓</span></label></div>
-        <input class="priority-input" id="pt1" placeholder="Your #2 priority today…" oninput="savePriority(1)">
-      </div>
-      <div class="priority-item">
-        <span class="priority-num">03</span>
-        <div class="cb-wrap"><input type="checkbox" id="p2" onchange="onPriorityChange()"><label class="cb-custom" for="p2"><span class="checkmark">✓</span></label></div>
-        <input class="priority-input" id="pt2" placeholder="Your #3 priority today…" oninput="savePriority(2)">
-      </div>
-    </div>
-  </div>
-
-  <!-- AI FEEDBACK -->
-  <div class="card" id="feedbackCard">
-    <div class="card-header">
-      <div class="card-title"><span class="card-title-icon">🧠</span>AI Feedback</div>
-    </div>
-    <div class="feedback-section" id="feedbackSection">
-      <div class="feedback-item"><span class="fi-icon">💤</span><span>No data yet — check off some hours to generate insights.</span></div>
-    </div>
-  </div>
-
-  <!-- HOUR TRACKER -->
-  <div class="card" id="hourCard">
-    <div class="card-header">
-      <div class="card-title"><span class="card-title-icon">🌙</span>Full Day Tracker (5AM – 4AM)</div>
-    </div>
-    <div id="hourGrid"></div>
-  </div>
-
-  <!-- REFLECTION -->
-  <div class="card" id="reflectCard">
-    <div class="card-header">
-      <div class="card-title"><span class="card-title-icon">✍️</span>Reflection</div>
-    </div>
-    <textarea class="reflection-ta" id="reflection" placeholder="What did you accomplish today? What went well? What would you do differently?…" oninput="saveReflection()"></textarea>
+    <div id="prioritiesContainer"></div>
   </div>
 
   <!-- GOAL TRACKING -->
   <div class="card" id="goalCard">
     <div class="card-header">
-      <div class="card-title"><span class="card-title-icon">🎯</span>Goal Tracking</div>
+      <div class="card-title"><span class="card-title-icon">🗓</span>Goal Tracking</div>
     </div>
     <div class="goals-tabs">
       <button class="goals-tab active" onclick="switchGoalTab('weekly')">📅 Weekly</button>
@@ -1215,10 +1200,25 @@
     </div>
   </div>
 
+</div>
+
+<!-- ── TAB: INSIGHTS ── -->
+<div class="container tab-panel" id="panel-insights">
+
+  <!-- AI FEEDBACK -->
+  <div class="card" id="feedbackCard">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">🧠</span>AI Feedback</div>
+    </div>
+    <div class="feedback-section" id="feedbackSection">
+      <div class="feedback-item"><span class="fi-icon">💤</span><span>No data yet — check off some hours to generate insights.</span></div>
+    </div>
+  </div>
+
   <!-- HABIT DETECTION -->
   <div class="card" id="habitCard">
     <div class="card-header">
-      <div class="card-title"><span class="card-title-icon">🧠</span>Auto Habit Detection</div>
+      <div class="card-title"><span class="card-title-icon">🔍</span>Auto Habit Detection</div>
     </div>
     <div class="habit-grid">
       <div>
@@ -1240,24 +1240,105 @@
     <div id="smart-suggestions"><div class="empty-state">Suggestions appear after habits are detected.</div></div>
   </div>
 
-  <!-- ACTIONS -->
-  <div class="card" id="actionsCard">
+</div>
+
+<!-- ── TAB: REFLECTION ── -->
+<div class="container tab-panel" id="panel-reflect">
+  <div class="card" id="reflectCard" style="grid-column:1/-1">
     <div class="card-header">
-      <div class="card-title"><span class="card-title-icon">⚙️</span>Actions</div>
+      <div class="card-title"><span class="card-title-icon">✍️</span>Reflection</div>
     </div>
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="generateFeedback()">🔄 Refresh Analysis</button>
-      <button class="btn btn-ghost" onclick="exportSummary()">📋 Copy Summary</button>
-      <button class="btn btn-danger" onclick="resetDay()">🗑 Reset Day</button>
+    <textarea class="reflection-ta" id="reflection" placeholder="What did you accomplish today? What went well? What would you do differently?…" oninput="saveReflection()"></textarea>
+  </div>
+</div>
+
+<!-- ── TAB: HISTORY ── -->
+<div class="container tab-panel" id="panel-history">
+  <div class="card" id="calendarCard" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">📅</span>Calendar — History</div>
+    </div>
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calPrevMonth()">‹</button>
+      <div class="cal-month-label" id="calMonthLabel"></div>
+      <button class="cal-nav-btn" onclick="calNextMonth()">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <div class="cal-weekday">Sun</div><div class="cal-weekday">Mon</div>
+      <div class="cal-weekday">Tue</div><div class="cal-weekday">Wed</div>
+      <div class="cal-weekday">Thu</div><div class="cal-weekday">Fri</div>
+      <div class="cal-weekday">Sat</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-record" id="calRecord"></div>
+  </div>
+</div>
+
+<!-- ── TAB: SETTINGS ── -->
+<div class="container tab-panel" id="panel-settings">
+  <div class="card" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">💾</span>Data & Storage</div>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">
+      Your data is saved locally on your device using <strong style="color:var(--text)">localStorage</strong>. It will persist unless you manually clear it here or use "Clear Site Data" in your browser settings.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-primary" onclick="settingsExportJSON()" style="width:100%;text-align:left;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px">📤</span>
+        <div><div style="font-weight:700">Export All Data</div><div style="font-size:11px;opacity:0.75;font-weight:400">Download a .json backup of everything</div></div>
+      </button>
+      <label class="btn btn-ghost" style="width:100%;text-align:left;display:flex;align-items:center;gap:10px;cursor:pointer;" for="settingsImportFile">
+        <span style="font-size:18px">📥</span>
+        <div><div style="font-weight:700">Import Data</div><div style="font-size:11px;opacity:0.75;font-weight:400">Restore from a .json backup file</div></div>
+      </label>
+      <input type="file" id="settingsImportFile" accept=".json" style="display:none" onchange="settingsImportJSON(this)">
+      <button class="btn btn-danger" onclick="settingsClearAll()" style="width:100%;text-align:left;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px">🗑️</span>
+        <div><div style="font-weight:700">Clear All Data</div><div style="font-size:11px;opacity:0.75;font-weight:400">Permanently delete everything — cannot be undone</div></div>
+      </button>
     </div>
   </div>
 
+  <div class="card" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">📊</span>Storage Info</div>
+    </div>
+    <div id="settingsStorageInfo" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <div class="card" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">🎨</span>Appearance</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)">Theme</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Toggle between dark and light mode</div>
+      </div>
+      <button class="theme-btn" onclick="toggleTheme()" style="flex-shrink:0;">
+        <span class="theme-icon" id="themeIconSettings">☀️</span>
+        <span id="themeLabelSettings">Light</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">ℹ️</span>About</div>
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+      <div style="margin-bottom:6px;"><strong style="color:var(--text)">DayFlow</strong> — Night Shift Tracker</div>
+      <div>All data is stored <strong style="color:var(--text)">only on your device</strong> — nothing is sent to any server.</div>
+      <div style="margin-top:6px;">To keep your data safe, use <strong style="color:var(--text)">Export All Data</strong> regularly as a backup.</div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const HOUR_SLOTS = [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4];
+const HOUR_SLOTS = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
 const HOURS = HOUR_SLOTS.map(h => {
   let label;
   if (h === 0)  label = '12:00 AM';
@@ -1361,15 +1442,33 @@ function onHourChange(h) {
   refreshAll();
 }
 
-function loadPriorities() {
+function renderPriorities() {
   const data = loadDay();
-  for (let i = 0; i < 3; i++) {
-    const p = (data.priorities || [])[i] || {};
-    document.getElementById(`pt${i}`).value = p.text || '';
-    document.getElementById(`p${i}`).checked = !!p.done;
-    document.getElementById(`pt${i}`).classList.toggle('done', !!p.done);
-  }
+  const priorities = data.priorities || [{},{},{}];
+  const container = document.getElementById('prioritiesContainer');
+  container.innerHTML = '';
+  priorities.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'priority-item';
+    item.innerHTML = `
+      <span class="priority-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="cb-wrap">
+        <input type="checkbox" id="p${i}" ${p.done ? 'checked' : ''} onchange="onPriorityChange()">
+        <label class="cb-custom" for="p${i}"><span class="checkmark">✓</span></label>
+      </div>
+      <input class="priority-input ${p.done ? 'done' : ''}" id="pt${i}"
+        placeholder="Priority #${i+1}…" value="${(p.text||'').replace(/"/g,'&quot;')}"
+        oninput="savePriority(${i})">
+      <button class="del-priority-btn" onclick="deletePriority(${i})" title="Remove">✕</button>
+    `;
+    container.appendChild(item);
+  });
 }
+
+function loadPriorities() {
+  renderPriorities();
+}
+
 function savePriority(i) {
   const data = loadDay();
   data.priorities = data.priorities || [{},{},{}];
@@ -1378,15 +1477,38 @@ function savePriority(i) {
   saveDay(data);
   refreshAll();
 }
+
 function onPriorityChange() {
   const data = loadDay();
-  data.priorities = data.priorities || [{},{},{}];
-  for (let i = 0; i < 3; i++) {
-    data.priorities[i] = data.priorities[i] || {};
-    data.priorities[i].done = document.getElementById(`p${i}`).checked;
-    document.getElementById(`pt${i}`).classList.toggle('done', data.priorities[i].done);
-  }
+  data.priorities = data.priorities || [];
+  data.priorities.forEach((p, i) => {
+    const cb = document.getElementById(`p${i}`);
+    const inp = document.getElementById(`pt${i}`);
+    if (!cb) return;
+    p.done = cb.checked;
+    if (inp) inp.classList.toggle('done', p.done);
+  });
   saveDay(data);
+  refreshAll();
+}
+
+function addPriority() {
+  const data = loadDay();
+  data.priorities = data.priorities || [{},{},{}];
+  data.priorities.push({});
+  saveDay(data);
+  renderPriorities();
+  // Focus the new input
+  const idx = data.priorities.length - 1;
+  setTimeout(() => { const el = document.getElementById(`pt${idx}`); if (el) el.focus(); }, 50);
+}
+
+function deletePriority(i) {
+  const data = loadDay();
+  data.priorities = data.priorities || [];
+  data.priorities.splice(i, 1);
+  saveDay(data);
+  renderPriorities();
   refreshAll();
 }
 
@@ -1800,6 +1922,10 @@ function applyTheme(isLight) {
   const label = document.getElementById('themeLabel');
   if (icon) icon.textContent = isLight ? '🌙' : '☀️';
   if (label) label.textContent = isLight ? 'Dark' : 'Light';
+  const iconS = document.getElementById('themeIconSettings');
+  const labelS = document.getElementById('themeLabelSettings');
+  if (iconS) iconS.textContent = isLight ? '🌙' : '☀️';
+  if (labelS) labelS.textContent = isLight ? 'Dark' : 'Light';
   localStorage.setItem('dayflow_theme', isLight ? 'light' : 'dark');
 }
 
@@ -1820,146 +1946,284 @@ function initTheme() {
   });
 }
 
-// ── CALENDAR ──
+// ── TAB SWITCHING ────────────────────────────
+const TAB_IDS = ['today','tracker','goals','insights','reflect','history','settings'];
+
+function switchTab(id) {
+  TAB_IDS.forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('active', t === id);
+    document.getElementById('tab-' + t).classList.toggle('active', t === id);
+  });
+  if (id === 'today') refreshAll();
+  if (id === 'settings') settingsRefreshInfo();
+}
+
+// ── CALENDAR ─────────────────────────────────
 let calYear, calMonth, calSelectedKey = null;
 
-function calStorageKey(y, m, d) {
-  return STORAGE_KEY + y + '-' + (m+1) + '-' + d;
+function calDayKey(y, m, d) {
+  return `${y}-${m+1}-${d}`;
 }
 
-function dayHasData(y, m, d) {
-  const raw = localStorage.getItem(calStorageKey(y, m, d));
-  if (!raw) return false;
-  const data = JSON.parse(raw);
-  return HOUR_SLOTS.some(h => {
-    const e = data['h' + h];
-    return e && (e.done || (e.text && e.text.trim().length > 0));
-  });
+function calInit() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  calRender();
 }
 
-function renderCalendar() {
-  const today = new Date();
-  if (calYear === undefined) { calYear = today.getFullYear(); calMonth = today.getMonth(); }
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('calMonthLabel').textContent = monthNames[calMonth] + ' ' + calYear;
+function calPrevMonth() {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  calRender();
+}
+
+function calNextMonth() {
+  const now = new Date();
+  if (calYear === now.getFullYear() && calMonth === now.getMonth()) return;
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  calRender();
+}
+
+function calRender() {
+  const now = new Date();
+  const months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  document.getElementById('calMonthLabel').textContent = `${months[calMonth]} ${calYear}`;
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
 
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
-  const todayStr = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
-  const grid = document.getElementById('calGrid');
-  grid.innerHTML = '';
-
+  // Empty cells
   for (let i = 0; i < firstDay; i++) {
-    const empty = document.createElement('div');
-    empty.className = 'cal-cell cal-empty';
-    grid.appendChild(empty);
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const cell = document.createElement('div');
-    cell.className = 'cal-cell';
-    cell.textContent = d;
+    const key = calDayKey(calYear, calMonth, d);
+    const raw = localStorage.getItem(STORAGE_KEY + key);
+    const data = raw ? JSON.parse(raw) : null;
+    const isToday = calYear === now.getFullYear() && calMonth === now.getMonth() && d === now.getDate();
+    const isFuture = new Date(calYear, calMonth, d) > now;
+    const isSelected = key === calSelectedKey;
 
-    const cellKey = calYear + '-' + (calMonth+1) + '-' + d;
-    if (cellKey === todayStr) cell.classList.add('cal-today');
-    if (cellKey === calSelectedKey) cell.classList.add('cal-selected');
-    if (dayHasData(calYear, calMonth, d)) cell.classList.add('cal-has-data');
+    const el = document.createElement('div');
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+    if (isFuture) cls += ' future';
+    if (isSelected) cls += ' selected';
 
-    cell.addEventListener('click', () => showCalLog(calYear, calMonth, d, cellKey));
-    grid.appendChild(cell);
+    if (data && !isFuture) {
+      cls += ' has-data';
+      const done = HOUR_SLOTS.filter(h => data['h'+h]?.done).length;
+      const total = HOUR_SLOTS.length;
+      const pct = done / total;
+      if (pct >= 0.7) cls += ' score-high';
+      else if (pct >= 0.4) cls += ' score-mid';
+      else cls += ' score-low';
+    }
+
+    el.className = cls;
+    el.textContent = d;
+    el.onclick = () => calSelectDay(key, d);
+    grid.appendChild(el);
   }
+
+  // Re-show record if selected date still valid
+  if (calSelectedKey) calShowRecord(calSelectedKey);
 }
 
-function calNav(dir) {
-  calMonth += dir;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  if (calMonth < 0)  { calMonth = 11; calYear--; }
-  renderCalendar();
-}
-
-function showCalLog(y, m, d, key) {
+function calSelectDay(key, d) {
+  if (calSelectedKey === key) {
+    calSelectedKey = null;
+    document.getElementById('calRecord').classList.remove('visible');
+    calRender();
+    return;
+  }
   calSelectedKey = key;
-  renderCalendar();
-
-  const panel = document.getElementById('calLogPanel');
-  panel.classList.add('visible');
-
-  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const dow = new Date(y, m, d).getDay();
-  document.getElementById('calLogDate').textContent = dayNames[dow] + ', ' + monthNames[m] + ' ' + d + ', ' + y;
-
-  const raw = localStorage.getItem(calStorageKey(y, m, d));
-  const data = raw ? JSON.parse(raw) : {};
-
-  // Stats chips
-  const statsEl = document.getElementById('calLogStats');
-  let productive = 0, total = 0;
-  HOUR_SLOTS.forEach(h => {
-    const e = data['h' + h];
-    if (e && e.text && e.text.trim().length > 0) { total++; if (e.done) productive++; }
-  });
-  if (total > 0) {
-    const pct = Math.round((productive / total) * 100);
-    statsEl.innerHTML =
-      '<span class="cal-log-stat-chip badge-green">✅ ' + productive + ' productive</span>' +
-      '<span class="cal-log-stat-chip badge-blue">📝 ' + total + ' logged</span>' +
-      '<span class="cal-log-stat-chip badge-orange">⚡ ' + pct + '% score</span>';
-  } else {
-    statsEl.innerHTML = '';
-  }
-
-  // Hour rows
-  const hoursEl = document.getElementById('calLogHours');
-  const hoursSec = document.getElementById('calLogHoursSection');
-  const entries = HOUR_SLOTS.map(h => ({ h, ...(data['h' + h] || {}) })).filter(e => e.text && e.text.trim().length > 0);
-  if (entries.length === 0) {
-    hoursSec.style.display = 'none';
-  } else {
-    hoursSec.style.display = '';
-    hoursEl.innerHTML = entries.map(e => {
-      let label;
-      if (e.h === 0) label = '12 AM';
-      else if (e.h < 12) label = e.h + ' AM';
-      else if (e.h === 12) label = '12 PM';
-      else label = (e.h - 12) + ' PM';
-      return '<div class="cal-log-hour-row' + (e.done ? ' done-row' : '') + '">' +
-        '<span class="cal-log-hour-label">' + label + '</span>' +
-        '<span class="cal-log-hour-text">' + (e.done ? '✅ ' : '') + e.text + '</span></div>';
-    }).join('');
-  }
-
-  // Reflection
-  const refSec = document.getElementById('calLogReflectionSection');
-  const refEl = document.getElementById('calLogReflection');
-  const reflection = data.reflection;
-  if (reflection && reflection.trim().length > 0) {
-    refSec.style.display = '';
-    refEl.textContent = reflection;
-  } else {
-    refSec.style.display = 'none';
-  }
-
-  if (entries.length === 0 && (!reflection || reflection.trim().length === 0)) {
-    hoursEl.innerHTML = '';
-    hoursSec.style.display = '';
-    hoursEl.innerHTML = '<div class="cal-log-empty">No entries logged for this day.</div>';
-  }
-
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  calRender();
+  calShowRecord(key);
 }
 
-function initCalendar() {
-  const today = new Date();
-  calYear = today.getFullYear();
-  calMonth = today.getMonth();
-  renderCalendar();
+function calShowRecord(key) {
+  const rec = document.getElementById('calRecord');
+  const raw = localStorage.getItem(STORAGE_KEY + key);
+
+  if (!raw) {
+    rec.innerHTML = `<div class="cal-no-data">📭 No data recorded for this day.</div>`;
+    rec.classList.add('visible');
+    return;
+  }
+
+  const data = JSON.parse(raw);
+  const parts = key.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateStr = `${months[parseInt(parts[1])-1]} ${parts[2]}, ${parts[0]}`;
+
+  const done = HOUR_SLOTS.filter(h => data['h'+h]?.done).length;
+  const missed = HOUR_SLOTS.filter(h => !data['h'+h]?.done).length;
+  const score = Math.round((done / HOUR_SLOTS.length) * 100);
+
+  const priDone = (data.priorities || []).filter(p => p.done).length;
+  const priTotal = (data.priorities || []).filter(p => p.text).length;
+
+  // Hour chips - only hours with text or checked
+  const chips = HOUR_SLOTS.map(h => {
+    const e = data['h'+h];
+    if (!e || (!e.done && !e.text)) return '';
+    let lbl;
+    if (h === 0) lbl = '12AM';
+    else if (h < 12) lbl = h+'AM';
+    else if (h === 12) lbl = '12PM';
+    else lbl = (h-12)+'PM';
+    return `<span class="cal-hour-chip ${e.done?'done':'missed'}">${lbl}${e.text ? ': '+e.text.slice(0,18)+(e.text.length>18?'…':'') : ''}</span>`;
+  }).join('');
+
+  const reflection = data.reflection
+    ? `<div class="cal-reflection-preview">"${data.reflection.slice(0,160)}${data.reflection.length>160?'…':''}"</div>`
+    : '';
+
+  const priText = priTotal > 0
+    ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">🎯 Priorities: <strong style="color:var(--text)">${priDone}/${priTotal} done</strong></div>`
+    : '';
+
+  rec.innerHTML = `
+    <div class="cal-record-date">📆 ${dateStr}</div>
+    <div class="cal-record-stats">
+      <div class="cal-stat"><div class="cal-stat-val green">${done}</div><div class="cal-stat-label">Done</div></div>
+      <div class="cal-stat"><div class="cal-stat-val orange">${missed}</div><div class="cal-stat-label">Missed</div></div>
+      <div class="cal-stat"><div class="cal-stat-val blue">${score}%</div><div class="cal-stat-label">Score</div></div>
+    </div>
+    ${priText}
+    ${chips ? `<div class="cal-hours-preview">${chips}</div>` : ''}
+    ${reflection}
+    ${!chips && !reflection ? '<div class="cal-no-data">No detailed entries found.</div>' : ''}
+  `;
+  rec.classList.add('visible');
+}
+
+// ══════════════════════════════════════════════
+// SETTINGS — Export / Import / Clear / Info
+// ══════════════════════════════════════════════
+function settingsGetAllData() {
+  const out = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('dayflow')) {
+      try { out[k] = JSON.parse(localStorage.getItem(k)); }
+      catch(e) { out[k] = localStorage.getItem(k); }
+    }
+  }
+  return out;
+}
+
+function settingsExportJSON() {
+  const data = settingsGetAllData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = `dayflow-backup-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Data exported!');
+}
+
+function settingsImportJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      let count = 0;
+      Object.entries(data).forEach(([k, v]) => {
+        if (k.startsWith('dayflow')) {
+          localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+          count++;
+        }
+      });
+      showToast(`✅ Imported ${count} records!`);
+      settingsRefreshInfo();
+      buildGrid();
+      loadPriorities();
+      loadReflection();
+      generateFeedback();
+      initGoals();
+    } catch(err) {
+      showToast('❌ Invalid file. Make sure it\'s a DayFlow backup.');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function settingsClearAll() {
+  if (!confirm('⚠️ Delete ALL DayFlow data? This cannot be undone.\n\nExport a backup first if you want to keep your records.')) return;
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('dayflow')) keys.push(k);
+  }
+  keys.forEach(k => localStorage.removeItem(k));
+  buildGrid();
+  loadPriorities();
+  loadReflection();
+  generateFeedback();
+  initGoals();
+  settingsRefreshInfo();
+  showToast('🗑️ All data cleared.');
+}
+
+function settingsRefreshInfo() {
+  const el = document.getElementById('settingsStorageInfo');
+  if (!el) return;
+  const allData = settingsGetAllData();
+  const keys = Object.keys(allData);
+  const dayKeys = keys.filter(k => k.startsWith(STORAGE_KEY));
+  const bytes = JSON.stringify(allData).length;
+  const kb = (bytes / 1024).toFixed(1);
+  const streak = getStreak();
+
+  // Count days with data
+  const daysWithData = dayKeys.length;
+  const goalsCount = (allData['dayflow_weekly_goals'] || []).filter(g => g.text).length +
+                     (allData['dayflow_monthly_goals'] || []).filter(g => g.text).length;
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="background:var(--glass);border:0.5px solid var(--glass-border);border-radius:var(--radius-md);padding:14px;text-align:center;">
+        <div style="font-size:26px;font-weight:700;color:var(--blue);letter-spacing:-1px;">${daysWithData}</div>
+        <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.6px;margin-top:4px;">Days Tracked</div>
+      </div>
+      <div style="background:var(--glass);border:0.5px solid var(--glass-border);border-radius:var(--radius-md);padding:14px;text-align:center;">
+        <div style="font-size:26px;font-weight:700;color:var(--green);letter-spacing:-1px;">${streak.count}</div>
+        <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.6px;margin-top:4px;">Day Streak</div>
+      </div>
+      <div style="background:var(--glass);border:0.5px solid var(--glass-border);border-radius:var(--radius-md);padding:14px;text-align:center;">
+        <div style="font-size:26px;font-weight:700;color:var(--orange);letter-spacing:-1px;">${goalsCount}</div>
+        <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.6px;margin-top:4px;">Goals Set</div>
+      </div>
+      <div style="background:var(--glass);border:0.5px solid var(--glass-border);border-radius:var(--radius-md);padding:14px;text-align:center;">
+        <div style="font-size:26px;font-weight:700;color:var(--purple);letter-spacing:-1px;">${kb}<span style="font-size:13px">kb</span></div>
+        <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.6px;margin-top:4px;">Storage Used</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-tertiary);text-align:center;">
+      ${daysWithData === 0 ? '📭 No data stored yet.' : `📦 ${keys.length} total records in localStorage`}
+    </div>
+  `;
 }
 
 function init() {
   initTheme();
-  initCalendar();
   setHeaderDate();
   buildGrid();
   loadPriorities();
@@ -1968,18 +2232,10 @@ function init() {
   document.getElementById('reflection').addEventListener('input', () => { saveReflection(); refreshAll(); });
   initGoals();
   initHabits();
+  calInit();
   setInterval(refreshAll, 300000);
 }
 init();
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js")
-      .then(r => console.log("SW registered:", r.scope))
-      .catch(e => console.log("SW error:", e));
-  });
-}
 </script>
 </body>
 </html>
