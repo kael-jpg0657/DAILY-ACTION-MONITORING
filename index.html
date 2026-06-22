@@ -1677,9 +1677,13 @@ function buildGrid() {
 
     if (entry.done) row.classList.add('checked');
     grid.appendChild(row);
-    setTimeout(() => { const ta = document.getElementById('htx' + h); if (ta) autoResize(ta); }, 0);
-    setTimeout(autoResizeAll, 50);
   });
+
+  // Reliable multi-pass resize: fonts/layout need a moment to settle
+  autoResizeAll();
+  setTimeout(autoResizeAll, 50);
+  setTimeout(autoResizeAll, 150);
+  setTimeout(autoResizeAll, 400);
 }
 
 function onHourChange(h) {
@@ -1937,7 +1941,8 @@ function refreshAll() {
 }
 
 function autoResize(el) {
-  el.style.height = 'auto';
+  if (!el) return;
+  el.style.height = '0px';
   el.style.height = el.scrollHeight + 'px';
 }
 
