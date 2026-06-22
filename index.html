@@ -556,10 +556,11 @@
     padding: 6px 8px;
     transition: all 0.18s;
     resize: none;
-    min-height: 36px;
+    min-height: 40px;
     line-height: 1.6;
     overflow: hidden;
     letter-spacing: -0.1px;
+    box-sizing: border-box;
   }
   .hour-input:focus {
     color: var(--text);
@@ -972,7 +973,7 @@
   .cal-day.future { opacity: 0.3; pointer-events: none; }
 
   .cal-record {
-    margin-top: 14px; padding: 14px;
+    margin-top: 14px; padding: 18px;
     background: var(--glass); border: 0.5px solid var(--glass-border);
     border-radius: var(--radius-lg); display: none;
     animation: fadeUp 0.25s ease;
@@ -1001,9 +1002,9 @@
   .cal-hour-chip.done { background: rgba(48,209,88,0.12); color: var(--green); border-color: rgba(48,209,88,0.25); }
   .cal-hour-chip.missed { background: rgba(255,69,58,0.08); color: var(--text-tertiary); border-color: rgba(255,69,58,0.15); }
   .cal-reflection-preview {
-    font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+    font-size: 12px; color: var(--text-secondary); line-height: 1.7;
     border-left: 2px solid var(--blue); padding-left: 10px;
-    font-style: italic;
+    font-style: italic; white-space: pre-wrap; word-break: break-word;
   }
   .cal-no-data {
     text-align: center; font-size: 13px; color: var(--text-tertiary); padding: 10px 0;
@@ -1434,7 +1435,13 @@
       </div>
       <div style="font-size:12px;font-weight:600;color:var(--red);min-height:16px;" id="settingsPwError"></div>
       <button class="btn btn-primary" onclick="settingsChangePw()" style="width:100%;">🔒 Save New Password</button>
-      <button class="btn btn-danger" onclick="settingsRemovePw()" style="width:100%;">🔓 Remove Password Lock</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-top:4px;border-top:0.5px solid var(--glass-border);">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">Password Lock</div>
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;" id="lockStatusLabel">Checking…</div>
+        </div>
+        <button id="lockToggleBtn" onclick="settingsToggleLock()" style="padding:7px 16px;border-radius:20px;border:none;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all 0.2s;">Toggle</button>
+      </div>
     </div>
   </div>
 
@@ -1671,6 +1678,7 @@ function buildGrid() {
     if (entry.done) row.classList.add('checked');
     grid.appendChild(row);
     setTimeout(() => { const ta = document.getElementById('htx' + h); if (ta) autoResize(ta); }, 0);
+    setTimeout(autoResizeAll, 50);
   });
 }
 
@@ -1932,6 +1940,11 @@ function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
 }
+
+function autoResizeAll() {
+  document.querySelectorAll('.hour-input').forEach(ta => autoResize(ta));
+}
+window.addEventListener('resize', autoResizeAll);
 
 const GOAL_CFG = {
   weekly:  { max: 7,  key: 'dayflow_weekly_goals',  placeholder: 'Weekly goal…' },
@@ -2454,6 +2467,7 @@ async function settingsChangePw() {
   document.getElementById('settingsNewPw').value = '';
   document.getElementById('settingsConfPw').value = '';
   settingsPwStrength();
+  settingsUpdateLockToggle();
   showToast('✅ Password updated!');
 }
 
@@ -2461,6 +2475,42 @@ function settingsRemovePw() {
   if (!confirm('Remove password lock? Anyone with access to this device can open DayFlow.')) return;
   localStorage.removeItem(LOCK_KEY);
   showToast('🔓 Password lock removed.');
+  settingsUpdateLockToggle();
+}
+
+function settingsUpdateLockToggle() {
+  const isOn = lockIsSet();
+  const btn = document.getElementById('lockToggleBtn');
+  const lbl = document.getElementById('lockStatusLabel');
+  if (!btn || !lbl) return;
+  if (isOn) {
+    btn.textContent = '🔓 Turn Off';
+    btn.style.background = 'rgba(255,69,58,0.15)';
+    btn.style.color = 'var(--red)';
+    lbl.textContent = 'Password is active — app is locked on open';
+  } else {
+    btn.textContent = '🔒 Turn On';
+    btn.style.background = 'rgba(48,209,88,0.15)';
+    btn.style.color = 'var(--green)';
+    lbl.textContent = 'No password set — anyone can open the app';
+  }
+  // Also show/hide the change-password fields
+  const fields = document.getElementById('lockPwFields');
+  if (fields) fields.style.display = isOn ? 'block' : 'none';
+}
+
+function settingsToggleLock() {
+  if (lockIsSet()) {
+    settingsRemovePw();
+  } else {
+    // Scroll to the password fields and focus
+    const inp = document.getElementById('settingsNewPw');
+    if (inp) {
+      inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => inp.focus(), 300);
+      showToast('👆 Set a new password below');
+    }
+  }
 }
 
 function settingsRefreshInfo() {
@@ -2501,6 +2551,7 @@ function settingsRefreshInfo() {
       ${daysWithData === 0 ? '📭 No data stored yet.' : `📦 ${keys.length} total records in localStorage`}
     </div>
   `;
+  settingsUpdateLockToggle();
 }
 
 function init() {
