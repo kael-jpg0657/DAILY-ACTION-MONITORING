@@ -128,6 +128,64 @@
   body.light .logo-dot { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
   body.light .now-dot { background: var(--blue); box-shadow: 0 0 5px var(--blue); }
 
+  /* ── LOCK SCREEN ── */
+  #lockScreen {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 24px;
+    animation: fadeIn 0.3s ease;
+  }
+  #lockScreen.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .lock-logo { font-size: 48px; margin-bottom: 12px; filter: drop-shadow(0 0 16px rgba(10,132,255,0.4)); }
+  .lock-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); margin-bottom: 4px; }
+  .lock-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 32px; text-align: center; line-height: 1.5; }
+  .lock-input-wrap { width: 100%; max-width: 320px; position: relative; margin-bottom: 12px; }
+  .lock-input {
+    width: 100%; background: var(--surface2);
+    border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 14px 48px 14px 18px;
+    font-size: 16px; font-weight: 500;
+    color: var(--text); font-family: var(--font);
+    outline: none; letter-spacing: 0.5px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .lock-input:focus { border-color: rgba(10,132,255,0.5); box-shadow: 0 0 0 3px rgba(10,132,255,0.12); }
+  .lock-input.error { border-color: var(--red); box-shadow: 0 0 0 3px rgba(255,69,58,0.15); animation: shake 0.35s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+  .lock-eye-btn {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; font-size: 18px; cursor: pointer;
+    color: var(--text-tertiary); transition: color 0.15s; padding: 4px;
+  }
+  .lock-eye-btn:hover { color: var(--text-secondary); }
+  .lock-error { font-size: 12px; font-weight: 600; color: var(--red); min-height: 18px; margin-bottom: 16px; text-align: center; }
+  .lock-btn {
+    width: 100%; max-width: 320px; padding: 14px; border-radius: var(--radius-lg);
+    font-size: 15px; font-weight: 700; font-family: var(--font);
+    cursor: pointer; border: none; transition: all 0.15s ease; letter-spacing: -0.1px;
+  }
+  .lock-btn:active { transform: scale(0.97); }
+  .lock-btn-primary { background: var(--blue); color: #fff; box-shadow: 0 4px 16px rgba(10,132,255,0.35); }
+  .lock-btn-primary:hover { background: #2693ff; }
+  .lock-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 8px; text-align: center; max-width: 300px; line-height: 1.5; }
+  .lock-strength { width: 100%; max-width: 320px; display: flex; gap: 4px; margin-bottom: 8px; }
+  .lock-strength-bar { flex: 1; height: 3px; border-radius: 99px; background: var(--glass); transition: background 0.3s; }
+  .lock-strength-bar.weak   { background: var(--red); }
+  .lock-strength-bar.medium { background: var(--orange); }
+  .lock-strength-bar.strong { background: var(--green); }
+  .lock-strength-label { font-size: 11px; font-weight: 600; margin-bottom: 12px; color: var(--text-tertiary); }
+
   /* Smooth theme transition */
   body, body * {
     transition-property: background, background-color, border-color, color, box-shadow;
@@ -1036,6 +1094,34 @@
 </head>
 <body>
 
+<!-- ── LOCK SCREEN ── -->
+<div id="lockScreen">
+  <div class="lock-logo">🔒</div>
+  <div class="lock-title" id="lockTitle">DayFlow</div>
+  <div class="lock-sub" id="lockSub">Enter your password to continue</div>
+
+  <div class="lock-input-wrap" id="lockConfirmWrap" style="display:none">
+    <input class="lock-input" type="password" id="lockConfirmInput" placeholder="Confirm password" autocomplete="new-password">
+    <button class="lock-eye-btn" onclick="lockToggleEye('lockConfirmInput', this)">👁️</button>
+  </div>
+
+  <div class="lock-input-wrap">
+    <input class="lock-input" type="password" id="lockInput" placeholder="Password" autocomplete="current-password">
+    <button class="lock-eye-btn" onclick="lockToggleEye('lockInput', this)">👁️</button>
+  </div>
+
+  <div class="lock-strength" id="lockStrength" style="display:none">
+    <div class="lock-strength-bar" id="lsb1"></div>
+    <div class="lock-strength-bar" id="lsb2"></div>
+    <div class="lock-strength-bar" id="lsb3"></div>
+  </div>
+  <div class="lock-strength-label" id="lockStrengthLabel" style="display:none"></div>
+
+  <div class="lock-error" id="lockError"></div>
+  <button class="lock-btn lock-btn-primary" id="lockActionBtn" onclick="lockAction()">Unlock</button>
+  <div class="lock-hint" id="lockHint"></div>
+</div>
+
 <header class="header">
   <div class="header-inner">
     <div class="logo">DayFlow<span class="logo-dot"></span></div>
@@ -1320,6 +1406,35 @@
         <span class="theme-icon" id="themeIconSettings">☀️</span>
         <span id="themeLabelSettings">Light</span>
       </button>
+    </div>
+  </div>
+
+  <div class="card" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">🔒</span>Password & Lock</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.7px;text-transform:uppercase;margin-bottom:6px;">New Password</div>
+        <div style="position:relative;margin-bottom:8px;">
+          <input class="lock-input" type="password" id="settingsNewPw" placeholder="Enter new password" autocomplete="new-password" oninput="settingsPwStrength()" style="border-radius:var(--radius-md);">
+          <button class="lock-eye-btn" onclick="lockToggleEye('settingsNewPw', this)">👁️</button>
+        </div>
+        <div class="lock-strength" id="settingsPwStrength" style="margin-bottom:4px;">
+          <div class="lock-strength-bar" id="spb1"></div>
+          <div class="lock-strength-bar" id="spb2"></div>
+          <div class="lock-strength-bar" id="spb3"></div>
+        </div>
+        <div class="lock-strength-label" id="settingsPwLabel" style="margin-bottom:10px;display:block;"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.7px;text-transform:uppercase;margin-bottom:6px;">Confirm Password</div>
+        <div style="position:relative;margin-bottom:12px;">
+          <input class="lock-input" type="password" id="settingsConfPw" placeholder="Confirm new password" autocomplete="new-password" style="border-radius:var(--radius-md);">
+          <button class="lock-eye-btn" onclick="lockToggleEye('settingsConfPw', this)">👁️</button>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:600;color:var(--red);min-height:16px;" id="settingsPwError"></div>
+      <button class="btn btn-primary" onclick="settingsChangePw()" style="width:100%;">🔒 Save New Password</button>
+      <button class="btn btn-danger" onclick="settingsRemovePw()" style="width:100%;">🔓 Remove Password Lock</button>
     </div>
   </div>
 
@@ -2182,6 +2297,40 @@ function settingsClearAll() {
   showToast('🗑️ All data cleared.');
 }
 
+
+function settingsPwStrength() {
+  const pw = document.getElementById('settingsNewPw').value;
+  const { level, label } = lockGetStrength(pw);
+  const bars = [document.getElementById('spb1'), document.getElementById('spb2'), document.getElementById('spb3')];
+  const cls = level === 1 ? 'weak' : level === 2 ? 'medium' : 'strong';
+  bars.forEach((b, i) => { b.className = 'lock-strength-bar' + (i < level ? ' ' + cls : ''); });
+  const lbl = document.getElementById('settingsPwLabel');
+  lbl.textContent = label;
+  lbl.style.color = level === 1 ? 'var(--red)' : level === 2 ? 'var(--orange)' : 'var(--green)';
+}
+
+async function settingsChangePw() {
+  const pw = document.getElementById('settingsNewPw').value.trim();
+  const conf = document.getElementById('settingsConfPw').value.trim();
+  const errEl = document.getElementById('settingsPwError');
+  errEl.textContent = '';
+  if (!pw) { errEl.textContent = 'Please enter a new password.'; return; }
+  if (pw.length < 4) { errEl.textContent = 'Password must be at least 4 characters.'; return; }
+  if (pw !== conf) { errEl.textContent = 'Passwords do not match.'; return; }
+  const hash = await lockHash(pw);
+  localStorage.setItem(LOCK_KEY, hash);
+  document.getElementById('settingsNewPw').value = '';
+  document.getElementById('settingsConfPw').value = '';
+  settingsPwStrength();
+  showToast('✅ Password updated!');
+}
+
+function settingsRemovePw() {
+  if (!confirm('Remove password lock? Anyone with access to this device can open DayFlow.')) return;
+  localStorage.removeItem(LOCK_KEY);
+  showToast('🔓 Password lock removed.');
+}
+
 function settingsRefreshInfo() {
   const el = document.getElementById('settingsStorageInfo');
   if (!el) return;
@@ -2223,6 +2372,7 @@ function settingsRefreshInfo() {
 }
 
 function init() {
+  lockInit();
   initTheme();
   setHeaderDate();
   buildGrid();
@@ -2236,6 +2386,139 @@ function init() {
   setInterval(refreshAll, 300000);
 }
 init();
+
+// ══════════════════════════════════════════════
+// LOCK SCREEN
+// ══════════════════════════════════════════════
+const LOCK_KEY = 'dayflow_lock_hash';
+const LOCK_SALT = 'dayflow_2025_salt';
+
+// Simple hash: not cryptographic but enough for local privacy
+async function lockHash(password) {
+  const data = LOCK_SALT + password;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function lockIsSet() {
+  return !!localStorage.getItem(LOCK_KEY);
+}
+
+function lockToggleEye(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const isPassword = inp.type === 'password';
+  inp.type = isPassword ? 'text' : 'password';
+  btn.textContent = isPassword ? '🙈' : '👁️';
+}
+
+function lockGetStrength(pw) {
+  if (pw.length < 4) return { level: 0, label: '' };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { level: 1, label: 'Weak' };
+  if (score <= 2) return { level: 2, label: 'Medium' };
+  return { level: 3, label: 'Strong' };
+}
+
+function lockUpdateStrength() {
+  const pw = document.getElementById('lockInput').value;
+  const { level, label } = lockGetStrength(pw);
+  const bars = [document.getElementById('lsb1'), document.getElementById('lsb2'), document.getElementById('lsb3')];
+  const cls = level === 1 ? 'weak' : level === 2 ? 'medium' : 'strong';
+  bars.forEach((b, i) => {
+    b.className = 'lock-strength-bar' + (i < level ? ' ' + cls : '');
+  });
+  document.getElementById('lockStrengthLabel').textContent = label;
+  document.getElementById('lockStrengthLabel').style.color =
+    level === 1 ? 'var(--red)' : level === 2 ? 'var(--orange)' : 'var(--green)';
+}
+
+function lockShowError(msg) {
+  const el = document.getElementById('lockError');
+  el.textContent = msg;
+  document.getElementById('lockInput').classList.add('error');
+  setTimeout(() => {
+    document.getElementById('lockInput').classList.remove('error');
+    const conf = document.getElementById('lockConfirmInput');
+    if (conf) conf.classList.remove('error');
+  }, 600);
+}
+
+function lockClearError() {
+  document.getElementById('lockError').textContent = '';
+}
+
+async function lockAction() {
+  const pw = document.getElementById('lockInput').value.trim();
+  if (!pw) { lockShowError('Please enter a password.'); return; }
+
+  if (!lockIsSet()) {
+    // SETUP MODE
+    const conf = document.getElementById('lockConfirmInput').value.trim();
+    if (!conf) { lockShowError('Please confirm your password.'); return; }
+    if (pw !== conf) { lockShowError('Passwords do not match.'); return; }
+    const { level } = lockGetStrength(pw);
+    if (level < 1 || pw.length < 4) { lockShowError('Password must be at least 4 characters.'); return; }
+    const hash = await lockHash(pw);
+    localStorage.setItem(LOCK_KEY, hash);
+    lockUnlock();
+    showToast('🔒 Password set! Keep it safe.');
+  } else {
+    // UNLOCK MODE
+    const hash = await lockHash(pw);
+    const stored = localStorage.getItem(LOCK_KEY);
+    if (hash === stored) {
+      lockUnlock();
+    } else {
+      lockShowError('Wrong password. Try again.');
+      document.getElementById('lockInput').value = '';
+      document.getElementById('lockInput').focus();
+    }
+  }
+}
+
+function lockUnlock() {
+  const screen = document.getElementById('lockScreen');
+  screen.style.animation = 'fadeOut 0.25s ease forwards';
+  setTimeout(() => screen.classList.add('hidden'), 250);
+}
+
+function lockInit() {
+  const screen = document.getElementById('lockScreen');
+  const inp = document.getElementById('lockInput');
+
+  if (!lockIsSet()) {
+    // First time setup
+    document.getElementById('lockTitle').textContent = 'Set a Password';
+    document.getElementById('lockSub').textContent = 'Protect your DayFlow data with a password.';
+    document.getElementById('lockActionBtn').textContent = 'Set Password';
+    document.getElementById('lockConfirmWrap').style.display = 'block';
+    document.getElementById('lockStrength').style.display = 'flex';
+    document.getElementById('lockStrengthLabel').style.display = 'block';
+    document.getElementById('lockHint').textContent = 'Use letters, numbers, or symbols. You can change this in Settings.';
+    inp.placeholder = 'Create a password';
+    inp.autocomplete = 'new-password';
+    inp.addEventListener('input', lockUpdateStrength);
+    inp.addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') { document.getElementById('lockConfirmInput').focus(); } });
+    document.getElementById('lockConfirmInput').addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') lockAction(); });
+  } else {
+    // Unlock screen
+    document.getElementById('lockTitle').textContent = 'DayFlow';
+    document.getElementById('lockSub').textContent = 'Enter your password to continue';
+    document.getElementById('lockActionBtn').textContent = 'Unlock';
+    inp.focus();
+    inp.addEventListener('keydown', e => { lockClearError(); if (e.key === 'Enter') lockAction(); });
+  }
+}
+
+// Add fadeOut keyframe dynamically
+const lockStyle = document.createElement('style');
+lockStyle.textContent = '@keyframes fadeOut { from { opacity:1; } to { opacity:0; } }';
+document.head.appendChild(lockStyle);
+
 </script>
 </body>
 </html>
