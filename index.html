@@ -1009,6 +1009,44 @@
   .cal-no-data {
     text-align: center; font-size: 13px; color: var(--text-tertiary); padding: 10px 0;
   }
+  .cal-section-label {
+    font-size: 10px; font-weight: 700; color: var(--text-tertiary);
+    letter-spacing: 0.6px; text-transform: uppercase; margin: 12px 0 6px;
+  }
+  .cal-section-label:first-child { margin-top: 0; }
+  .cal-priorities-list {
+    display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px;
+  }
+  .cal-priority-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 12.5px; line-height: 1.5; padding: 9px 10px;
+    background: var(--surface2); border-radius: var(--radius-sm);
+  }
+  .cal-priority-row.done { opacity: 0.6; }
+  .cal-priority-check { flex-shrink: 0; font-size: 13px; line-height: 1.4; }
+  .cal-priority-text { color: var(--text); word-break: break-word; white-space: pre-wrap; }
+  .cal-priority-text.done { text-decoration: line-through; color: var(--text-secondary); }
+  .cal-reflection-full {
+    font-size: 13px; color: var(--text); line-height: 1.7;
+    border-left: 2px solid var(--blue); padding: 10px 12px;
+    background: var(--surface2); border-radius: var(--radius-sm);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .cal-hours-full {
+    display: flex; flex-direction: column; gap: 5px; margin-bottom: 4px;
+  }
+  .cal-hour-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 12px; line-height: 1.5; padding: 7px 10px;
+    background: var(--surface2); border-radius: var(--radius-sm);
+  }
+  .cal-hour-row-time { flex-shrink: 0; font-weight: 600; color: var(--text-secondary); min-width: 44px; }
+  .cal-hour-row.done .cal-hour-row-time { color: var(--green); }
+  .cal-hour-row.missed .cal-hour-row-time { color: var(--text-tertiary); }
+  .cal-hour-row-text { color: var(--text); word-break: break-word; white-space: pre-wrap; }
+  body.light .cal-priority-row { background: rgba(0,0,0,0.04); }
+  body.light .cal-reflection-full { background: rgba(0,0,0,0.04); }
+  body.light .cal-hour-row { background: rgba(0,0,0,0.04); }
   body.light .cal-nav-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.10); }
   body.light .cal-day.today { background: rgba(0,122,255,0.10); }
   body.light .cal-day.selected { background: rgba(0,122,255,0.12); }
@@ -2230,6 +2268,12 @@ function calDayKey(y, m, d) {
   return `${y}-${m+1}-${d}`;
 }
 
+function calEscapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
 function calInit() {
   const now = new Date();
   calYear = now.getFullYear();
@@ -2335,27 +2379,50 @@ function calShowRecord(key) {
   const missed = HOUR_SLOTS.filter(h => !data['h'+h]?.done).length;
   const score = Math.round((done / HOUR_SLOTS.length) * 100);
 
-  const priDone = (data.priorities || []).filter(p => p.done).length;
-  const priTotal = (data.priorities || []).filter(p => p.text).length;
+  const priItems = (data.priorities || []).filter(p => p.text && p.text.trim());
+  const priDone = priItems.filter(p => p.done).length;
+  const priTotal = priItems.length;
 
-  // Hour chips - only hours with text or checked
-  const chips = HOUR_SLOTS.map(h => {
+  // Full priorities list — complete text, not truncated
+  const prioritiesHTML = priTotal > 0 ? `
+    <div class="cal-section-label">🎯 Daily Actions (${priDone}/${priTotal} done)</div>
+    <div class="cal-priorities-list">
+      ${priItems.map(p => `
+        <div class="cal-priority-row ${p.done ? 'done' : ''}">
+          <span class="cal-priority-check">${p.done ? '✅' : '⬜'}</span>
+          <span class="cal-priority-text ${p.done ? 'done' : ''}">${calEscapeHtml(p.text)}</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  // Full hourly log — complete text, not truncated
+  const hourItems = HOUR_SLOTS.map(h => {
     const e = data['h'+h];
-    if (!e || (!e.done && !e.text)) return '';
+    if (!e || (!e.done && !e.text)) return null;
     let lbl;
     if (h === 0) lbl = '12AM';
     else if (h < 12) lbl = h+'AM';
     else if (h === 12) lbl = '12PM';
     else lbl = (h-12)+'PM';
-    return `<span class="cal-hour-chip ${e.done?'done':'missed'}">${lbl}${e.text ? ': '+e.text.slice(0,18)+(e.text.length>18?'…':'') : ''}</span>`;
-  }).join('');
+    return { lbl, done: !!e.done, text: e.text || '' };
+  }).filter(Boolean);
 
-  const reflection = data.reflection
-    ? `<div class="cal-reflection-preview">"${data.reflection.slice(0,160)}${data.reflection.length>160?'…':''}"</div>`
-    : '';
+  const hoursHTML = hourItems.length > 0 ? `
+    <div class="cal-section-label">⏰ Hourly Log</div>
+    <div class="cal-hours-full">
+      ${hourItems.map(e => `
+        <div class="cal-hour-row ${e.done ? 'done' : 'missed'}">
+          <span class="cal-hour-row-time">${e.lbl}</span>
+          <span class="cal-hour-row-text">${e.text ? calEscapeHtml(e.text) : (e.done ? '✓ Done' : '— Missed')}</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
 
-  const priText = priTotal > 0
-    ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">🎯 Priorities: <strong style="color:var(--text)">${priDone}/${priTotal} done</strong></div>`
+  // Full reflection — complete text, not truncated
+  const reflectionHTML = data.reflection
+    ? `<div class="cal-section-label">📝 Reflection</div><div class="cal-reflection-full">${calEscapeHtml(data.reflection)}</div>`
     : '';
 
   rec.innerHTML = `
@@ -2365,10 +2432,10 @@ function calShowRecord(key) {
       <div class="cal-stat"><div class="cal-stat-val orange">${missed}</div><div class="cal-stat-label">Missed</div></div>
       <div class="cal-stat"><div class="cal-stat-val blue">${score}%</div><div class="cal-stat-label">Score</div></div>
     </div>
-    ${priText}
-    ${chips ? `<div class="cal-hours-preview">${chips}</div>` : ''}
-    ${reflection}
-    ${!chips && !reflection ? '<div class="cal-no-data">No detailed entries found.</div>' : ''}
+    ${prioritiesHTML}
+    ${hoursHTML}
+    ${reflectionHTML}
+    ${!prioritiesHTML && !hoursHTML && !reflectionHTML ? '<div class="cal-no-data">No detailed entries found.</div>' : ''}
   `;
   rec.classList.add('visible');
 }
