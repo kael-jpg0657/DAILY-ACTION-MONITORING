@@ -571,6 +571,35 @@
   .hour-input::placeholder { color: rgba(255,255,255,0.12); font-size: 12px; }
   .hour-input.filled { color: var(--text); }
 
+  .hour-suggest-box {
+    position: fixed;
+    display: none;
+    z-index: 500;
+    background: var(--surface3);
+    border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    max-height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hour-suggest-item {
+    padding: 10px 13px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text);
+    cursor: pointer;
+    border-bottom: 0.5px solid var(--border);
+    white-space: pre-wrap; word-break: break-word;
+    transition: background 0.1s;
+  }
+  .hour-suggest-item:last-child { border-bottom: none; }
+  .hour-suggest-item:hover, .hour-suggest-item.active { background: var(--glass); }
+  .hour-suggest-item .hs-count {
+    float: right; font-size: 10px; font-weight: 600; color: var(--text-tertiary);
+    margin-left: 8px;
+  }
+
   /* ── REFLECTION ── */
   .reflection-ta {
     width: 100%;
@@ -594,6 +623,33 @@
     box-shadow: 0 0 0 3px rgba(10,132,255,0.1);
   }
   .reflection-ta::placeholder { color: var(--text-tertiary); }
+
+  /* ── AFFIRMATION & GRATITUDE ── */
+  .affirmation-ta {
+    width: 100%;
+    background: var(--glass);
+    border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    font-family: var(--font);
+    padding: 16px;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.6;
+    letter-spacing: -0.1px;
+    font-style: italic;
+  }
+  .affirmation-ta:focus {
+    border-color: rgba(191,90,242,0.45);
+    box-shadow: 0 0 0 3px rgba(191,90,242,0.12);
+  }
+  .affirmation-ta::placeholder { color: var(--text-tertiary); font-style: italic; }
+  #gratitudeContainer .priority-num { color: var(--purple); }
+  body.light .affirmation-ta { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.09); }
 
   /* ── BUTTONS (iOS style) ── */
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -1047,6 +1103,24 @@
   body.light .cal-priority-row { background: rgba(0,0,0,0.04); }
   body.light .cal-reflection-full { background: rgba(0,0,0,0.04); }
   body.light .cal-hour-row { background: rgba(0,0,0,0.04); }
+  .cal-affirmation-full {
+    font-size: 13px; color: var(--text); line-height: 1.7;
+    border-left: 2px solid var(--purple); padding: 10px 12px;
+    background: var(--surface2); border-radius: var(--radius-sm);
+    white-space: pre-wrap; word-break: break-word; font-style: italic;
+  }
+  .cal-gratitude-list {
+    display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px;
+  }
+  .cal-gratitude-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 12.5px; line-height: 1.5; padding: 9px 10px;
+    background: var(--surface2); border-radius: var(--radius-sm);
+    color: var(--text); word-break: break-word; white-space: pre-wrap;
+  }
+  .cal-gratitude-row-icon { flex-shrink: 0; color: var(--purple); }
+  body.light .cal-affirmation-full { background: rgba(0,0,0,0.04); }
+  body.light .cal-gratitude-row { background: rgba(0,0,0,0.04); }
   body.light .cal-nav-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.10); }
   body.light .cal-day.today { background: rgba(0,122,255,0.10); }
   body.light .cal-day.selected { background: rgba(0,122,255,0.12); }
@@ -1273,6 +1347,7 @@
       <div class="card-title"><span class="card-title-icon">🕛</span>Full Day Tracker (12AM – 11PM)</div>
     </div>
     <div id="hourGrid"></div>
+    <div class="hour-suggest-box" id="hourSuggestBox"></div>
   </div>
 </div>
 
@@ -1369,6 +1444,21 @@
 
 <!-- ── TAB: REFLECTION ── -->
 <div class="container tab-panel" id="panel-reflect">
+
+  <!-- AFFIRMATION & GRATITUDE -->
+  <div class="card" id="affirmationCard" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">🌅</span>Affirmation &amp; Gratitude</div>
+    </div>
+    <div class="sub-label">Today's Affirmation</div>
+    <textarea class="affirmation-ta" id="affirmation" placeholder="I am…" oninput="saveAffirmation()"></textarea>
+    <div class="sub-label" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;">
+      <span>Grateful For Today</span>
+      <button class="add-priority-btn" onclick="addGratitude()" title="Add gratitude">＋</button>
+    </div>
+    <div id="gratitudeContainer"></div>
+  </div>
+
   <div class="card" id="reflectCard" style="grid-column:1/-1">
     <div class="card-header">
       <div class="card-title"><span class="card-title-icon">✍️</span>Reflection</div>
@@ -1711,7 +1801,7 @@ function buildGrid() {
     row.innerHTML =
       '<div class="time-label' + (isCurrent ? ' current' : '') + '">' + label + (isCurrent ? '<span class="now-dot"></span>' : '') + '</div>' +
       '<div class="cb-wrap" style="padding-top:7px"><input type="checkbox" id="hcb' + h + '" ' + (entry.done ? 'checked' : '') + ' onchange="onHourChange(' + h + ')"><label class="cb-custom" for="hcb' + h + '"><span class="checkmark">\u2713</span></label></div>' +
-      '<textarea class="hour-input' + (entry.text ? ' filled' : '') + '" id="htx' + h + '" placeholder="What did you do this hour?" oninput="onHourChange(' + h + ');autoResize(this)" rows="1">' + (entry.text || '').replace(/</g,'&lt;') + '</textarea>';
+      '<textarea class="hour-input' + (entry.text ? ' filled' : '') + '" id="htx' + h + '" placeholder="What did you do this hour?" oninput="onHourChange(' + h + ');autoResize(this);showHourSuggestions(' + h + ',this)" onfocus="showHourSuggestions(' + h + ',this)" onkeydown="if(event.key===\'Escape\')hideHourSuggestions()" rows="1">' + (entry.text || '').replace(/</g,'&lt;') + '</textarea>';
 
     if (entry.done) row.classList.add('checked');
     grid.appendChild(row);
@@ -1731,6 +1821,12 @@ function onHourChange(h) {
   const row = document.getElementById('row-' + h);
   const key = 'h' + h;
   data[key] = data[key] || {};
+
+  // Auto-check the box whenever there's text written for this hour
+  if (tx.value.trim() !== '') {
+    cb.checked = true;
+  }
+
   data[key].done = cb.checked;
   data[key].text = tx.value;
   row.classList.toggle('checked', cb.checked);
@@ -1738,6 +1834,74 @@ function onHourChange(h) {
   saveDay(data);
   refreshAll();
 }
+
+// ══════════════════════════════════════════════
+// HOUR NOTES — Auto-suggest from past entries
+// ══════════════════════════════════════════════
+function getPastHourNotes(h) {
+  const freq = {};
+  const todayFullKey = STORAGE_KEY + todayKey();
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith(STORAGE_KEY) || k === todayFullKey) continue;
+    let data;
+    try { data = JSON.parse(localStorage.getItem(k)); } catch(e) { continue; }
+    const entry = data && data['h' + h];
+    const text = entry && entry.text ? entry.text.trim() : '';
+    if (text) freq[text] = (freq[text] || 0) + 1;
+  }
+  return Object.entries(freq).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+function showHourSuggestions(h, textarea) {
+  const box = document.getElementById('hourSuggestBox');
+  if (!box) return;
+  const query = textarea.value.trim().toLowerCase();
+  const past = getPastHourNotes(h);
+
+  let matches = query
+    ? past.filter(([t]) => t.toLowerCase().includes(query) && t.toLowerCase() !== query)
+    : past;
+  matches = matches.slice(0, 6);
+
+  if (matches.length === 0) { hideHourSuggestions(); return; }
+
+  box.innerHTML = matches.map(([t, count]) =>
+    `<div class="hour-suggest-item" onmousedown="event.preventDefault();pickHourSuggestion(${h},this)">${calEscapeHtml(t)}${count > 1 ? `<span class="hs-count">×${count}</span>` : ''}</div>`
+  ).join('');
+
+  const rect = textarea.getBoundingClientRect();
+  box.style.left = rect.left + 'px';
+  box.style.top = (rect.bottom + 4) + 'px';
+  box.style.width = Math.max(rect.width, 200) + 'px';
+  box.style.display = 'block';
+}
+
+function pickHourSuggestion(h, el) {
+  const tx = document.getElementById('htx' + h);
+  if (!tx) return;
+  tx.value = el.firstChild ? el.firstChild.textContent : el.textContent;
+  autoResize(tx);
+  onHourChange(h);
+  hideHourSuggestions();
+  tx.focus();
+  const len = tx.value.length;
+  tx.setSelectionRange(len, len);
+}
+
+function hideHourSuggestions() {
+  const box = document.getElementById('hourSuggestBox');
+  if (box) box.style.display = 'none';
+}
+
+document.addEventListener('click', (e) => {
+  const box = document.getElementById('hourSuggestBox');
+  if (!box || box.style.display === 'none') return;
+  if (box.contains(e.target)) return;
+  if (e.target.classList && e.target.classList.contains('hour-input')) return;
+  hideHourSuggestions();
+});
+document.addEventListener('scroll', () => hideHourSuggestions(), true);
 
 function renderPriorities() {
   const data = loadDay();
@@ -1817,6 +1981,65 @@ function saveReflection() {
   const data = loadDay();
   data.reflection = document.getElementById('reflection').value;
   saveDay(data);
+}
+
+function loadAffirmation() {
+  const data = loadDay();
+  document.getElementById('affirmation').value = data.affirmation || '';
+}
+function saveAffirmation() {
+  const data = loadDay();
+  data.affirmation = document.getElementById('affirmation').value;
+  saveDay(data);
+}
+
+function renderGratitude() {
+  const data = loadDay();
+  const gratitude = data.gratitude && data.gratitude.length ? data.gratitude : [{},{},{}];
+  const container = document.getElementById('gratitudeContainer');
+  container.innerHTML = '';
+  gratitude.forEach((g, i) => {
+    const item = document.createElement('div');
+    item.className = 'priority-item';
+    item.innerHTML = `
+      <span class="priority-num">${String(i+1).padStart(2,'0')}</span>
+      <input class="priority-input" id="gt${i}"
+        placeholder="Something you're grateful for…" value="${(g.text||'').replace(/"/g,'&quot;')}"
+        oninput="saveGratitude(${i})">
+      <button class="del-priority-btn" onclick="deleteGratitude(${i})" title="Remove">✕</button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function loadGratitude() {
+  renderGratitude();
+}
+
+function saveGratitude(i) {
+  const data = loadDay();
+  data.gratitude = data.gratitude && data.gratitude.length ? data.gratitude : [{},{},{}];
+  data.gratitude[i] = data.gratitude[i] || {};
+  data.gratitude[i].text = document.getElementById(`gt${i}`).value;
+  saveDay(data);
+}
+
+function addGratitude() {
+  const data = loadDay();
+  data.gratitude = data.gratitude && data.gratitude.length ? data.gratitude : [{},{},{}];
+  data.gratitude.push({});
+  saveDay(data);
+  renderGratitude();
+  const idx = data.gratitude.length - 1;
+  setTimeout(() => { const el = document.getElementById(`gt${idx}`); if (el) el.focus(); }, 50);
+}
+
+function deleteGratitude(i) {
+  const data = loadDay();
+  data.gratitude = data.gratitude || [];
+  data.gratitude.splice(i, 1);
+  saveDay(data);
+  renderGratitude();
 }
 
 function buildHeatmap() {
@@ -1953,6 +2176,8 @@ function resetDay() {
   buildGrid();
   loadPriorities();
   loadReflection();
+  loadAffirmation();
+  loadGratitude();
   generateFeedback();
   showToast('Day reset!');
 }
@@ -2396,6 +2621,25 @@ function calShowRecord(key) {
     </div>
   ` : '';
 
+  // Affirmation — complete text, not truncated
+  const affirmationHTML = data.affirmation && data.affirmation.trim()
+    ? `<div class="cal-section-label">🌅 Affirmation</div><div class="cal-affirmation-full">${calEscapeHtml(data.affirmation)}</div>`
+    : '';
+
+  // Gratitude — full list
+  const gratItems = (data.gratitude || []).filter(g => g.text && g.text.trim());
+  const gratitudeHTML = gratItems.length > 0 ? `
+    <div class="cal-section-label">🙏 Grateful For</div>
+    <div class="cal-gratitude-list">
+      ${gratItems.map(g => `
+        <div class="cal-gratitude-row">
+          <span class="cal-gratitude-row-icon">✦</span>
+          <span>${calEscapeHtml(g.text)}</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
   // Full hourly log — complete text, not truncated
   const hourItems = HOUR_SLOTS.map(h => {
     const e = data['h'+h];
@@ -2433,9 +2677,11 @@ function calShowRecord(key) {
       <div class="cal-stat"><div class="cal-stat-val blue">${score}%</div><div class="cal-stat-label">Score</div></div>
     </div>
     ${prioritiesHTML}
+    ${affirmationHTML}
+    ${gratitudeHTML}
     ${hoursHTML}
     ${reflectionHTML}
-    ${!prioritiesHTML && !hoursHTML && !reflectionHTML ? '<div class="cal-no-data">No detailed entries found.</div>' : ''}
+    ${!prioritiesHTML && !affirmationHTML && !gratitudeHTML && !hoursHTML && !reflectionHTML ? '<div class="cal-no-data">No detailed entries found.</div>' : ''}
   `;
   rec.classList.add('visible');
 }
@@ -2487,6 +2733,8 @@ function settingsImportJSON(input) {
       buildGrid();
       loadPriorities();
       loadReflection();
+      loadAffirmation();
+      loadGratitude();
       generateFeedback();
       initGoals();
     } catch(err) {
@@ -2508,6 +2756,8 @@ function settingsClearAll() {
   buildGrid();
   loadPriorities();
   loadReflection();
+  loadAffirmation();
+  loadGratitude();
   generateFeedback();
   initGoals();
   settingsRefreshInfo();
@@ -2633,8 +2883,11 @@ function init() {
   buildGrid();
   loadPriorities();
   loadReflection();
+  loadAffirmation();
+  loadGratitude();
   generateFeedback();
   document.getElementById('reflection').addEventListener('input', () => { saveReflection(); refreshAll(); });
+  document.getElementById('affirmation').addEventListener('input', () => { saveAffirmation(); });
   initGoals();
   initHabits();
   calInit();
