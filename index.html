@@ -651,6 +651,74 @@
   #gratitudeContainer .priority-num { color: var(--purple); }
   body.light .affirmation-ta { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.09); }
 
+  /* ── BEHAVIOR TRACKER ── */
+  .mood-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mood-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 14px; border-radius: 20px;
+    border: 0.5px solid var(--glass-border);
+    background: var(--glass); color: var(--text-secondary);
+    font-size: 13px; font-weight: 600; font-family: var(--font);
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .mood-chip:hover { background: rgba(128,128,128,0.12); color: var(--text); }
+  .mood-chip:active { transform: scale(0.96); }
+  .mood-chip.active {
+    background: rgba(10,132,255,0.15); border-color: var(--blue); color: var(--blue);
+  }
+
+  .anger-level-row { display: flex; gap: 8px; }
+  .anger-level-btn {
+    flex: 1; padding: 12px 4px;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--glass-border);
+    background: var(--glass); color: var(--text-secondary);
+    font-family: var(--font); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    transition: all 0.15s ease;
+  }
+  .anger-level-btn:hover { background: rgba(128,128,128,0.10); }
+  .anger-level-btn:active { transform: scale(0.96); }
+  .anger-level-btn .al-icon { font-size: 20px; line-height: 1; }
+  .anger-level-btn .al-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+  .anger-level-btn.level-1.active { border-color: var(--green);  background: rgba(48,209,88,0.14);  color: var(--green); }
+  .anger-level-btn.level-2.active { border-color: var(--teal);   background: rgba(90,200,250,0.14);  color: var(--teal); }
+  .anger-level-btn.level-3.active { border-color: var(--orange); background: rgba(255,159,10,0.14);  color: var(--orange); }
+  .anger-level-btn.level-4.active { border-color: #FF6B4A;       background: rgba(255,107,74,0.14);  color: #FF6B4A; }
+  .anger-level-btn.level-5.active { border-color: var(--red);    background: rgba(255,69,58,0.14);   color: var(--red); }
+
+  .anger-entry {
+    background: var(--surface2); border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 12px; margin-bottom: 10px;
+  }
+  .anger-entry:last-child { margin-bottom: 0; }
+  .anger-entry-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .anger-intensity {
+    background: var(--glass); border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-sm); padding: 6px 10px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    font-family: var(--font); outline: none; cursor: pointer;
+  }
+
+  .behavior-textarea {
+    width: 100%; background: var(--surface2);
+    border: 0.5px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--text); font-size: 13px; font-weight: 400;
+    font-family: var(--font); padding: 10px 12px;
+    resize: vertical; min-height: 44px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.6; box-sizing: border-box;
+  }
+  .behavior-textarea:focus { border-color: rgba(10,132,255,0.4); box-shadow: 0 0 0 3px rgba(10,132,255,0.1); }
+  .behavior-textarea::placeholder { color: var(--text-tertiary); }
+
+  body.light .mood-chip { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.09); }
+  body.light .anger-level-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.09); }
+  body.light .anger-entry { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.07); }
+  body.light .anger-intensity { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.10); }
+  body.light .behavior-textarea { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.09); }
+
   /* ── BUTTONS (iOS style) ── */
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .btn {
@@ -1266,6 +1334,9 @@
     <button class="tab-btn" onclick="switchTab('reflect')" id="tab-reflect">
       <span class="tab-icon">✍️</span> Reflection
     </button>
+    <button class="tab-btn" onclick="switchTab('behavior')" id="tab-behavior">
+      <span class="tab-icon">🧭</span> Behavior
+    </button>
     <button class="tab-btn" onclick="switchTab('history')" id="tab-history">
       <span class="tab-icon">📅</span> History
     </button>
@@ -1465,6 +1536,47 @@
     </div>
     <textarea class="reflection-ta" id="reflection" placeholder="What did you accomplish today? What went well? What would you do differently?…" oninput="saveReflection()"></textarea>
   </div>
+</div>
+
+<!-- ── TAB: BEHAVIOR ── -->
+<div class="container tab-panel" id="panel-behavior">
+
+  <!-- MOOD CHECK-IN -->
+  <div class="card" id="moodCard" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">🧭</span>Mood Check-In</div>
+    </div>
+    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">Tap all that describe how you felt today.</p>
+    <div class="mood-chip-row" id="moodTagsContainer"></div>
+  </div>
+
+  <!-- ANGER / IRRITABILITY LEVEL -->
+  <div class="card" id="angerLevelCard" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">🌡️</span>Anger / Irritability Level</div>
+    </div>
+    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">Overall, how did you handle your temper today? Tap again to clear.</p>
+    <div class="anger-level-row" id="angerLevelContainer"></div>
+  </div>
+
+  <!-- INCIDENTS & TRIGGERS -->
+  <div class="card" id="angerLogCard" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">⚡</span>Incidents &amp; Triggers</div>
+      <button class="add-priority-btn" onclick="addAngerEntry()" title="Add incident">＋</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">Log moments you got angry or irritated — what triggered it, and how you reacted.</p>
+    <div id="angerLogContainer"></div>
+  </div>
+
+  <!-- BEHAVIOR NOTES -->
+  <div class="card" id="behaviorNotesCard" style="grid-column:1/-1">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">📝</span>Behavior Notes</div>
+    </div>
+    <textarea class="behavior-textarea" id="behaviorNotes" style="min-height:100px;width:100%;" placeholder="Any patterns you noticed? What helped you stay calm? What would you do differently next time?…" oninput="saveBehaviorNotes()"></textarea>
+  </div>
+
 </div>
 
 <!-- ── TAB: HISTORY ── -->
@@ -2042,6 +2154,148 @@ function deleteGratitude(i) {
   renderGratitude();
 }
 
+// ══════════════════════════════════════════════
+// BEHAVIOR TRACKER — Mood, Anger Level, Incidents
+// ══════════════════════════════════════════════
+const MOOD_TAGS = [
+  { key: 'calm',       label: 'Calm',       icon: '😌' },
+  { key: 'happy',      label: 'Happy',      icon: '😊' },
+  { key: 'patient',    label: 'Patient',    icon: '🧘' },
+  { key: 'motivated',  label: 'Motivated',  icon: '💪' },
+  { key: 'tired',      label: 'Tired',      icon: '😴' },
+  { key: 'anxious',    label: 'Anxious',    icon: '😰' },
+  { key: 'stressed',   label: 'Stressed',   icon: '😫' },
+  { key: 'sad',        label: 'Sad',        icon: '😔' },
+  { key: 'irritated',  label: 'Irritated',  icon: '😒' },
+  { key: 'angry',      label: 'Angry',      icon: '😠' },
+];
+
+const ANGER_LEVELS = [
+  { n: 1, icon: '😌', label: 'Calm' },
+  { n: 2, icon: '🙂', label: 'Mild' },
+  { n: 3, icon: '😠', label: 'Tense' },
+  { n: 4, icon: '😡', label: 'Angry' },
+  { n: 5, icon: '🤬', label: 'Explosive' },
+];
+
+function renderMoodTags() {
+  const container = document.getElementById('moodTagsContainer');
+  if (!container) return;
+  const data = loadDay();
+  const active = data.moodTags || [];
+  container.innerHTML = MOOD_TAGS.map(m => `
+    <button type="button" class="mood-chip ${active.includes(m.key) ? 'active' : ''}" onclick="toggleMoodTag('${m.key}')">
+      <span>${m.icon}</span><span>${m.label}</span>
+    </button>
+  `).join('');
+}
+function toggleMoodTag(key) {
+  const data = loadDay();
+  data.moodTags = data.moodTags || [];
+  const idx = data.moodTags.indexOf(key);
+  if (idx === -1) data.moodTags.push(key); else data.moodTags.splice(idx, 1);
+  saveDay(data);
+  renderMoodTags();
+}
+
+function renderAngerLevel() {
+  const container = document.getElementById('angerLevelContainer');
+  if (!container) return;
+  const data = loadDay();
+  const level = data.angerLevel || 0;
+  container.innerHTML = ANGER_LEVELS.map(l => `
+    <button type="button" class="anger-level-btn level-${l.n} ${level === l.n ? 'active' : ''}" onclick="setAngerLevel(${l.n})">
+      <span class="al-icon">${l.icon}</span><span class="al-label">${l.label}</span>
+    </button>
+  `).join('');
+}
+function setAngerLevel(n) {
+  const data = loadDay();
+  data.angerLevel = (data.angerLevel === n) ? 0 : n;
+  saveDay(data);
+  renderAngerLevel();
+}
+
+function renderAngerLog() {
+  const container = document.getElementById('angerLogContainer');
+  if (!container) return;
+  const data = loadDay();
+  const log = data.angerLog && data.angerLog.length ? data.angerLog : [];
+  container.innerHTML = '';
+  if (log.length === 0) {
+    container.innerHTML = '<div class="empty-state">No incidents logged today. 🎉</div>';
+    return;
+  }
+  log.forEach((entry, i) => {
+    const item = document.createElement('div');
+    item.className = 'anger-entry';
+    const intensity = entry.intensity || 3;
+    item.innerHTML = `
+      <div class="anger-entry-top">
+        <select class="anger-intensity" id="ai${i}" onchange="saveAngerEntry(${i})">
+          <option value="1" ${intensity===1?'selected':''}>😐 Mild</option>
+          <option value="2" ${intensity===2?'selected':''}>🙁 Annoyed</option>
+          <option value="3" ${intensity===3?'selected':''}>😠 Angry</option>
+          <option value="4" ${intensity===4?'selected':''}>😡 Very Angry</option>
+          <option value="5" ${intensity===5?'selected':''}>🤬 Explosive</option>
+        </select>
+        <button class="del-priority-btn" onclick="deleteAngerEntry(${i})" title="Remove">✕</button>
+      </div>
+      <textarea class="behavior-textarea" id="at${i}" placeholder="What happened? What triggered it, and how did you react?" oninput="saveAngerEntry(${i});autoResize(this)" rows="1">${(entry.text||'').replace(/</g,'&lt;')}</textarea>
+    `;
+    container.appendChild(item);
+  });
+  setTimeout(() => document.querySelectorAll('#angerLogContainer .behavior-textarea').forEach(t => autoResize(t)), 30);
+}
+function loadAngerLog() { renderAngerLog(); }
+function saveAngerEntry(i) {
+  const data = loadDay();
+  data.angerLog = data.angerLog && data.angerLog.length ? data.angerLog : [];
+  data.angerLog[i] = data.angerLog[i] || {};
+  const sel = document.getElementById('ai' + i);
+  const ta = document.getElementById('at' + i);
+  if (sel) data.angerLog[i].intensity = parseInt(sel.value, 10);
+  if (ta) data.angerLog[i].text = ta.value;
+  saveDay(data);
+}
+function addAngerEntry() {
+  const data = loadDay();
+  data.angerLog = data.angerLog && data.angerLog.length ? data.angerLog : [];
+  data.angerLog.push({ intensity: 3, text: '' });
+  saveDay(data);
+  renderAngerLog();
+  const idx = data.angerLog.length - 1;
+  setTimeout(() => { const el = document.getElementById('at' + idx); if (el) el.focus(); }, 50);
+}
+function deleteAngerEntry(i) {
+  const data = loadDay();
+  data.angerLog = data.angerLog || [];
+  data.angerLog.splice(i, 1);
+  saveDay(data);
+  renderAngerLog();
+}
+
+function loadBehaviorNotes() {
+  const el = document.getElementById('behaviorNotes');
+  if (!el) return;
+  const data = loadDay();
+  el.value = data.behaviorNotes || '';
+}
+function saveBehaviorNotes() {
+  const el = document.getElementById('behaviorNotes');
+  if (!el) return;
+  const data = loadDay();
+  data.behaviorNotes = el.value;
+  saveDay(data);
+}
+
+function initBehavior() {
+  renderMoodTags();
+  renderAngerLevel();
+  loadAngerLog();
+  loadBehaviorNotes();
+}
+
 function buildHeatmap() {
   const hm = document.getElementById('heatmap');
   hm.innerHTML = '';
@@ -2475,7 +2729,7 @@ function initTheme() {
 }
 
 // ── TAB SWITCHING ────────────────────────────
-const TAB_IDS = ['today','tracker','goals','insights','reflect','history','settings'];
+const TAB_IDS = ['today','tracker','goals','insights','reflect','behavior','history','settings'];
 
 function switchTab(id) {
   TAB_IDS.forEach(t => {
@@ -2669,6 +2923,44 @@ function calShowRecord(key) {
     ? `<div class="cal-section-label">📝 Reflection</div><div class="cal-reflection-full">${calEscapeHtml(data.reflection)}</div>`
     : '';
 
+  // Mood tags
+  const moodKeys = data.moodTags || [];
+  const moodHTML = moodKeys.length > 0 ? `
+    <div class="cal-section-label">🧭 Mood</div>
+    <div class="cal-gratitude-list">
+      ${moodKeys.map(k => {
+        const m = MOOD_TAGS.find(t => t.key === k);
+        return m ? `<div class="cal-gratitude-row"><span class="cal-gratitude-row-icon">${m.icon}</span><span>${calEscapeHtml(m.label)}</span></div>` : '';
+      }).join('')}
+    </div>
+  ` : '';
+
+  // Anger / irritability level
+  const angerLvl = ANGER_LEVELS.find(l => l.n === data.angerLevel);
+  const angerLevelHTML = angerLvl
+    ? `<div class="cal-section-label">🌡️ Anger / Irritability Level</div><div class="cal-priority-row"><span class="cal-priority-check">${angerLvl.icon}</span><span class="cal-priority-text">${angerLvl.label}</span></div>`
+    : '';
+
+  // Incidents & triggers — full list
+  const angerItems = (data.angerLog || []).filter(a => a.text && a.text.trim());
+  const angerLabels = { 1: '😐 Mild', 2: '🙁 Annoyed', 3: '😠 Angry', 4: '😡 Very Angry', 5: '🤬 Explosive' };
+  const angerLogHTML = angerItems.length > 0 ? `
+    <div class="cal-section-label">⚡ Incidents &amp; Triggers</div>
+    <div class="cal-priorities-list">
+      ${angerItems.map(a => `
+        <div class="cal-priority-row">
+          <span class="cal-priority-check">${angerLabels[a.intensity] || '😠'}</span>
+          <span class="cal-priority-text">${calEscapeHtml(a.text)}</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  // Behavior notes
+  const behaviorNotesHTML = data.behaviorNotes && data.behaviorNotes.trim()
+    ? `<div class="cal-section-label">🗒️ Behavior Notes</div><div class="cal-reflection-full">${calEscapeHtml(data.behaviorNotes)}</div>`
+    : '';
+
   rec.innerHTML = `
     <div class="cal-record-date">📆 ${dateStr}</div>
     <div class="cal-record-stats">
@@ -2681,7 +2973,11 @@ function calShowRecord(key) {
     ${gratitudeHTML}
     ${hoursHTML}
     ${reflectionHTML}
-    ${!prioritiesHTML && !affirmationHTML && !gratitudeHTML && !hoursHTML && !reflectionHTML ? '<div class="cal-no-data">No detailed entries found.</div>' : ''}
+    ${moodHTML}
+    ${angerLevelHTML}
+    ${angerLogHTML}
+    ${behaviorNotesHTML}
+    ${!prioritiesHTML && !affirmationHTML && !gratitudeHTML && !hoursHTML && !reflectionHTML && !moodHTML && !angerLevelHTML && !angerLogHTML && !behaviorNotesHTML ? '<div class="cal-no-data">No detailed entries found.</div>' : ''}
   `;
   rec.classList.add('visible');
 }
@@ -2737,6 +3033,7 @@ function settingsImportJSON(input) {
       loadGratitude();
       generateFeedback();
       initGoals();
+      initBehavior();
     } catch(err) {
       showToast('❌ Invalid file. Make sure it\'s a DayFlow backup.');
     }
@@ -2760,6 +3057,7 @@ function settingsClearAll() {
   loadGratitude();
   generateFeedback();
   initGoals();
+  initBehavior();
   settingsRefreshInfo();
   showToast('🗑️ All data cleared.');
 }
@@ -2890,6 +3188,7 @@ function init() {
   document.getElementById('affirmation').addEventListener('input', () => { saveAffirmation(); });
   initGoals();
   initHabits();
+  initBehavior();
   calInit();
   setInterval(refreshAll, 300000);
 }
